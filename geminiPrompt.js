@@ -27,7 +27,7 @@ When evidence is insufficient, use cautious wording instead of making unsupporte
         'interestInterpretation',
         'personalityInterpretation',
         'lifeHistoryInterpretation',
-        'targetJobFit',
+        'targetJobCompetencyAnalysis',
         'strengths',
         'cautions',
         'developmentDirections',
@@ -40,7 +40,7 @@ When evidence is insufficient, use cautious wording instead of making unsupporte
         interestInterpretation: {type: 'string'},
         personalityInterpretation: {type: 'string'},
         lifeHistoryInterpretation: {type: 'string'},
-        targetJobFit: {type: 'string'},
+        targetJobCompetencyAnalysis: {type: 'string'},
         strengths: {
           type: 'array',
           items: {type: 'string'}
@@ -104,7 +104,7 @@ When evidence is insufficient, use cautious wording instead of making unsupporte
         interestInterpretation: 'C 유형의 강점은 규칙, 절차, 문서, 데이터가 명확한 환경에서 잘 드러납니다. I 유형이 함께 나타나 단순 반복보다 분석과 판단이 포함된 사무형 과제에 더 적합합니다.',
         personalityInterpretation: '성실성이 높아 계획을 세우고 책임 있게 마무리하는 힘이 강합니다. 외향성이 낮은 편이므로 잦은 대면 설득보다 집중과 정리가 가능한 업무 방식이 더 자연스러울 수 있습니다.',
         lifeHistoryInterpretation: '독립심과 학업성취 경험이 높게 나타나 스스로 기준을 세우고 꾸준히 학습해 온 흐름이 확인됩니다.',
-        targetJobFit: '희망 직무가 아직 명확하지 않다면 HR 데이터, 교육 운영, 공공사업 관리처럼 사람 이해와 체계적 운영이 함께 필요한 분야를 우선 탐색할 수 있습니다.',
+        targetJobCompetencyAnalysis: '희망 직무가 아직 명확하지 않다면 HR 데이터, 교육 운영, 공공사업 관리처럼 사람 이해와 체계적 운영이 함께 필요한 분야를 우선 탐색할 수 있습니다.',
         strengths: ['자료 정리와 구조화 능력이 우수합니다.', '책임감 있게 업무를 완수합니다.', '독립적으로 문제를 해결합니다.'],
         cautions: ['강한 영업 설득 중심 업무에서는 에너지 소모가 클 수 있습니다.', '기준이 자주 바뀌는 환경에서는 피로가 누적될 가능성이 있습니다.'],
         developmentDirections: ['데이터 분석 도구 기초 학습', 'HR 또는 교육 운영 포트폴리오 정리', '관심 직무별 실제 채용공고 비교'],
@@ -134,7 +134,7 @@ When evidence is insufficient, use cautious wording instead of making unsupporte
       'interestInterpretation',
       'personalityInterpretation',
       'lifeHistoryInterpretation',
-      'targetJobFit',
+      'targetJobCompetencyAnalysis',
       'strengths',
       'cautions',
       'developmentDirections',
@@ -247,50 +247,17 @@ const TARGET_INTEREST_SCHEMA = {
   reportTitle: '',
   participantInfo: {
     name: '',
+    testDate: '',
     age: '',
     education: '',
-    major: '',
-    currentJob: '',
     targetJob: '',
-    certificates: ''
+    coreCode: ''
   },
-  interestTest: {
-    summary: '',
-    representativeCode: '',
-    scores: {
-      '현실형': null,
-      '탐구형': null,
-      '예술형': null,
-      '사회형': null,
-      '진취형': null,
-      '관습형': null
-    },
-    strengths: [],
-    cautions: []
-  },
-  personalityTest: {
-    isProvided: false,
-    summary: '',
-    scores: {},
-    strengths: [],
-    cautions: []
-  },
-  lifeHistoryTest: {
-    isProvided: false,
-    summary: '',
-    scores: {},
-    strengths: [],
-    cautions: []
-  },
-  targetJobFit: {
-    targetJob: '',
-    fitScore: null,
+  targetJobCompetencyAnalysis: {
     fitSummary: '',
     matchingPoints: [],
-    gaps: [],
-    preparationStrategy: []
+    gaps: []
   },
-  integratedAnalysis: '',
   swot: {
     strengths: [],
     weaknesses: [],
@@ -301,22 +268,19 @@ const TARGET_INTEREST_SCHEMA = {
     {
       title: '',
       reason: '',
-      relatedStrength: '',
       preparation: ''
     }
   ],
-  careerStrategy: {
-    shortTerm: [],
-    midTerm: [],
-    longTerm: []
-  },
-  counselorQuestions: [
+  demographicOutlook: '',
+  digitalTransformationOutlook: '',
+  finalStrategy: '',
+  coachingQuestions: [
     {
       question: '',
       intent: ''
     }
   ],
-  counselorNotice: '본 리포트는 AI가 분석한 데이터이며 내용에 대한 최종 평가는 전문가에게 있습니다.'
+  encouragementSlogans: []
 };
 
 const GEMINI_PROMPT_ITEMS = {
@@ -400,12 +364,11 @@ ${JSON.stringify(NO_TARGET_INTEREST_SCHEMA)}`;
   interestManual({ target, memo, manualData, hasTarget, promptItems }) {
     const promptItemsText = formatPromptItems(promptItems || GEMINI_PROMPT_ITEMS.interest);
     const targetGuide = hasTarget
-      ? `- 희망직무 "${target}"를 기준으로 targetJobFit을 가장 중요하게 작성하세요.
-- targetJobFit.fitSummary에는 희망직무와 검사 결과의 합치도, 불일치 지점, 보완 가능성을 3~4문장으로 작성하세요.
-- targetJobFit.matchingPoints는 입력된 직업흥미 점수, 전공, 학력, 자격증, 상담사 메모와 직접 연결되는 근거 3~5개로 작성하세요.
-- targetJobFit.gaps는 희망직무 수행 시 보완이 필요한 점 3~5개로 작성하되, 부정적으로 단정하지 말고 훈련 가능한 과제로 표현하세요.
-- targetJobFit.preparationStrategy는 바로 실행할 수 있는 준비전략 4~5개로 작성하세요.
-- 자격증이 입력된 경우에는 targetJobFit, recommendedJobs, careerStrategy에 자격증 활용 방안을 반영하세요.
+      ? `- 희망직무 "${target}"를 기준으로 targetJobCompetencyAnalysis를 가장 중요하게 작성하세요.
+- targetJobCompetencyAnalysis.fitSummary에는 희망직무와 검사 결과의 합치도, 불일치 지점, 보완 가능성을 3~4문장으로 작성하세요.
+- targetJobCompetencyAnalysis.matchingPoints는 입력된 직업흥미 점수, 전공, 학력, 자격증, 상담사 메모와 직접 연결되는 근거 3~5개로 작성하세요.
+- targetJobCompetencyAnalysis.gaps는 희망직무 수행 시 보완이 필요한 점 3~5개로 작성하되, 부정적으로 단정하지 말고 훈련 가능한 과제로 표현하세요.
+- 자격증이 입력된 경우에는 targetJobCompetencyAnalysis, recommendedJobs, finalStrategy에 자격증 활용 방안을 반영하세요.
 - 자격증이 미입력된 경우에는 자격증을 임의로 만들지 말고, 필요한 경우 "취득 검토 가능" 또는 "추가 확인 필요"로 표현하세요.`
       : `- 특정 희망직무가 없으므로 검사 결과 기반 추천 직무와 근거, 실행 과제를 제시하세요.`;
     return `당신은 직업선호도검사 리포트 작성 전문가입니다.
@@ -422,27 +385,26 @@ ${promptItemsText}
 - 직업흥미검사는 interestRaw 원점수 기준으로 해석하고, 표준점수처럼 바꾸어 쓰지 마세요.
 - 성격검사와 생활사검사는 선택 입력입니다. 값이 없거나 "미입력", "제공되지 않음"이면 임의 추정하지 말고 미입력 자료로 명시하세요.
 - 성격검사 또는 생활사검사가 미입력인 경우 해당 영역의 강점, 성향, 생활사 패턴을 새로 만들어내지 마세요.
-- 내담자의 이름, 나이, 학력, 전공, 자격증은 participantInfo에 반영하고, 희망직무 적합도와 커리어 전략에서 필요한 만큼만 근거로 사용하세요.
+- participantInfo에는 name, testDate, age, education, targetJob, coreCode만 반영하세요. 최종 화면에는 이름, 검사일시, 나이, 학력, 핵심코드만 표시됩니다.
 - 인적사항은 반복하지 말고 분석에 직접 관련되는 곳에서만 간결하게 사용하세요.
-- reportTitle, participantInfo, interestTest, personalityTest, lifeHistoryTest, targetJobFit, integratedAnalysis, swot, recommendedJobs, careerStrategy, counselorQuestions, counselorNotice 필드를 반드시 포함하세요.
+- reportTitle, participantInfo, targetJobCompetencyAnalysis, swot, recommendedJobs, demographicOutlook, digitalTransformationOutlook, finalStrategy, coachingQuestions, encouragementSlogans 필드를 반드시 포함하세요.
 
 [희망직무 있음 분석 강화 지침]
 ${targetGuide}
 
 [비용 절약을 위한 분량 제한]
-- 각 summary 또는 analysis 문단은 2~4문장으로 작성하세요.
-- strengths, cautions, matchingPoints, gaps, preparationStrategy, SWOT 항목은 각각 3~5개로 제한하세요.
-- recommendedJobs는 7개만 작성하고, 각 항목은 title, reason, relatedStrength, preparation을 간결하게 채우세요.
-- careerStrategy는 shortTerm, midTerm, longTerm 각각 3개 이내의 실행 과제로 작성하세요.
-- counselorQuestions는 10개를 작성하되, question과 intent를 각각 한 문장으로 간결하게 작성하세요.
+- 각 문단형 필드는 2~4문장으로 작성하세요.
+- matchingPoints, gaps, SWOT 항목은 각각 3~5개로 제한하세요.
+- recommendedJobs는 반드시 5개만 작성하고, 각 항목은 title, reason, preparation만 간결하게 채우세요.
+- coachingQuestions는 반드시 10개를 작성하되, question과 intent를 각각 한 문장으로 간결하게 작성하세요.
+- encouragementSlogans는 반드시 4개를 작성하세요.
 - 검사 점수, 희망직무, 전공, 자격증, 상담사 메모와 직접 연결되지 않는 일반론은 쓰지 마세요.
 
 [작성 품질 기준]
 - 희망직무와 검사 결과가 완전히 일치하지 않더라도 포기나 부적합으로 단정하지 말고, 보완 전략 중심으로 설명하세요.
-- fitScore는 100점 만점의 정수로 제시하되, 점수 자체보다 fitSummary와 matchingPoints의 근거가 더 중요합니다.
-- integratedAnalysis는 흥미검사, 입력된 성격검사, 입력된 생활사검사, 인적사항, 자격증, 상담사 메모를 종합하되 미입력 자료는 추정하지 마세요.
+- 점수 자체보다 targetJobCompetencyAnalysis.fitSummary와 matchingPoints의 근거가 더 중요합니다.
+- finalStrategy는 흥미검사, 입력된 성격검사, 입력된 생활사검사, 인적사항, 자격증, 상담사 메모를 종합하되 미입력 자료는 추정하지 마세요.
 - swot은 개인특성과 희망직무 준비 가능성을 기준으로 작성하세요.
-- counselorNotice에는 AI 리포트이며 최종 평가는 전문가에게 있다는 안내를 포함하세요.
 - HTML 태그, markdown, 코드블록, 설명문 없이 JSON만 반환하세요.
 
 [JSON Schema]
