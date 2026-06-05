@@ -1,6 +1,6 @@
     :root{--navy:#0f2742;--blue:#1f5f99;--bg:#f4f6f8;--white:#fff;--text:#182230;--muted:#667085;--line:#d9e1ea;--danger:#b42318;--success:#047857;--pink:#d63384}
     *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR',Arial,sans-serif;color:var(--text);background:var(--bg);line-height:1.55}button,input,textarea,select{font:inherit}button{cursor:pointer}a{text-decoration:none;color:inherit}.hidden{display:none!important}
-    .btn{border:1px solid transparent;background:var(--navy);color:white;padding:10px 15px;min-height:42px;border-radius:3px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px}.btn:hover{filter:brightness(.96)}.btn.secondary{background:white;color:var(--navy);border-color:#b8c6d6}.btn.light{background:#edf4fb;color:var(--navy);border-color:#d7e5f2}.btn.danger{background:var(--danger);color:white}.btn.full{width:100%}.small{font-size:13px;color:var(--muted)}.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .btn{border:1px solid transparent;background:var(--navy);color:white;padding:10px 15px;min-height:42px;border-radius:3px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}.btn:hover{filter:brightness(.96)}.btn.secondary{background:white;color:var(--navy);border-color:#b8c6d6}.btn.light{background:#edf4fb;color:var(--navy);border-color:#d7e5f2}.btn.danger{background:var(--danger);color:white}.btn.full{width:100%}.small{font-size:13px;color:var(--muted)}.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .pill{display:inline-flex;padding:3px 8px;border:1px solid #d6e5f4;background:#eef6ff;color:var(--blue);font-size:12px;font-weight:700;border-radius:2px;white-space:nowrap}.pill.green{background:#ecfdf5;color:var(--success);border-color:#bbf7d0}.pill.gray{background:#f2f4f7;color:#475467;border-color:#e4e7ec}
     input,textarea,select{width:100%;border:1px solid #cfd9e3;border-radius:3px;padding:11px 12px;background:#fff;color:var(--text);outline:none}input:focus,textarea:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(31,95,153,.08)}textarea{min-height:94px;resize:vertical}label{display:block;font-size:13px;font-weight:800;color:#344054;margin-bottom:7px}.field{margin-bottom:16px}.grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
     .table-wrap{overflow:auto;border:1px solid var(--line);background:white}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top}th{background:#f3f7fb;color:#344054;font-weight:800;white-space:nowrap}tr:hover td{background:#fbfdff}
@@ -161,3 +161,84 @@
 
 /* Replace generated hero art with the provided image file */
 .workspace-hero{background-image:url("assets/dashboard-hero.png");background-size:cover;background-position:center right;background-repeat:no-repeat}
+
+/* Report tables: keep Gemini-generated long text inside the report canvas. */
+.report-content table{
+  width:100%;
+  max-width:100%;
+  table-layout:fixed;
+  border-collapse:collapse;
+}
+.report-content th,
+.report-content td{
+  white-space:normal;
+  word-break:keep-all;
+  overflow-wrap:anywhere;
+  vertical-align:top;
+  box-sizing:border-box;
+}
+.report-content th{
+  white-space:normal;
+}
+.report-content th *,
+.report-content td *{
+  max-width:100%;
+  overflow-wrap:anywhere;
+}
+
+/* Target-job SWOT table: match the no-target SWOT box design. */
+.report-content table:has(> tbody > tr:first-child > th:nth-child(2):last-child):has(> tbody > tr:nth-child(3) > th:nth-child(2):last-child){
+  border:1px solid var(--line);
+  background:#fff;
+}
+.report-content table:has(> tbody > tr:first-child > th:nth-child(2):last-child):has(> tbody > tr:nth-child(3) > th:nth-child(2):last-child) th,
+.report-content table:has(> tbody > tr:first-child > th:nth-child(2):last-child):has(> tbody > tr:nth-child(3) > th:nth-child(2):last-child) td{
+  border-right:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  padding:14px;
+}
+.report-content table:has(> tbody > tr:first-child > th:nth-child(2):last-child):has(> tbody > tr:nth-child(3) > th:nth-child(2):last-child) th:nth-child(2),
+.report-content table:has(> tbody > tr:first-child > th:nth-child(2):last-child):has(> tbody > tr:nth-child(3) > th:nth-child(2):last-child) td:nth-child(2){
+  border-right:0;
+}
+.report-content table:has(> tbody > tr:first-child > th:nth-child(2):last-child):has(> tbody > tr:nth-child(3) > th:nth-child(2):last-child) tr:last-child td{
+  border-bottom:0;
+}
+.report-content table:has(> tbody > tr:first-child > th:nth-child(2):last-child):has(> tbody > tr:nth-child(3) > th:nth-child(2):last-child) th{
+  background:#f3f7fb;
+  color:#344054;
+  font-weight:800;
+}
+.report-content table:has(> tbody > tr:first-child > th:nth-child(2):last-child):has(> tbody > tr:nth-child(3) > th:nth-child(2):last-child) ul{
+  margin:8px 0 12px 20px;
+  padding:0;
+}
+.report-content table:has(> tbody > tr:first-child > th:nth-child(2):last-child):has(> tbody > tr:nth-child(3) > th:nth-child(2):last-child) li{
+  line-height:1.5;
+  margin:4px 0;
+}
+
+/* Target-job recommended jobs table: match the no-target jobs table framing. */
+.report-content table:has(> thead > tr:first-child > th:nth-child(5):last-child){
+  border:1px solid var(--line);
+  background:#fff;
+}
+.report-content table:has(> thead > tr:first-child > th:nth-child(5):last-child) th,
+.report-content table:has(> thead > tr:first-child > th:nth-child(5):last-child) td{
+  border-right:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+  padding:11px 12px;
+}
+.report-content table:has(> thead > tr:first-child > th:nth-child(5):last-child) th:last-child,
+.report-content table:has(> thead > tr:first-child > th:nth-child(5):last-child) td:last-child{
+  border-right:0;
+}
+.report-content table:has(> thead > tr:first-child > th:nth-child(5):last-child) tbody tr:last-child td{
+  border-bottom:0;
+}
+.report-content table:has(> thead > tr:first-child > th:nth-child(5):last-child) th{
+  background:#f3f7fb;
+  color:#344054;
+  font-weight:800;
+  white-space:normal;
+}
