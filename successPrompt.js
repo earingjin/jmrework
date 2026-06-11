@@ -1,57 +1,80 @@
 const SUCCESS_ANALYSIS_SCHEMA = {
   preparationAnalysis: {
     summary: '',
-    preparationPeriod: '',
-    keyPreparationSteps: []
+    rows: [
+      {
+        item: '',
+        caseCheck: '',
+        typicalPreparation: '',
+        preparationMethod: '',
+        typicalPeriod: '',
+        counselingUse: ''
+      }
+    ]
   },
-  certificateInfo: {
-    requiredCertificates: [],
-    helpfulCertificates: [],
-    preparationResources: []
+  certificatePreparationInfo: {
+    summary: '',
+    rows: [
+      {
+        name: '',
+        purpose: '',
+        method: '',
+        typicalPeriod: '',
+        outlook: '',
+        note: ''
+      }
+    ]
   },
-  counselingActionMemo: {
-    counselorMemo: '',
-    nextActions: [],
-    riskChecks: []
-  }
+  counselingComments: [],
+  counselingQuestions: []
 };
 
 const SUCCESS_PROMPTS = {
   system() {
-    return `너는 고용서비스 현장에서 10년 이상 근무한 직업상담사이자 AI 취업성공사례 분석가다. 선택된 취업성공사례와 내담자 정보를 바탕으로 상담사가 바로 활용할 수 있는 준비 내용, 준비기간, 자격증/준비 정보, 상담 실행 메모를 분석한다. 사례 데이터에 없는 사실은 만들지 말고, 근거가 부족한 경우 "추가 확인 필요"라고 표현한다. HTML, markdown, 코드블록, 설명문 없이 지정된 JSON Schema 형식의 JSON만 반환한다.`;
+    return `당신은 취업 성공사례를 교차 분석하는 직업상담 지원 AI입니다.
+선택된 SUCCESS_CASE_DB 사례, 참여자 정보, 상담사 메모를 우선 근거로 사용하세요.
+사례집에 준비기간, 자격증, 준비정보가 없으면 검색 및 일반 직무 지식을 활용해 통상적인 정보를 제안하되, 단정하지 말고 확인이 필요함을 명시하세요.
+HTML, markdown, 코드블록 없이 지정된 JSON 구조만 반환하세요.`;
   },
 
   user(input) {
-    return `아래 취업성공사례 검색 결과와 내담자 정보를 기반으로 AI 상담 보조 분석 JSON을 생성하라.
+    return `아래 데이터를 바탕으로 취업 성공사례 상담 리포트에 들어갈 내용 데이터를 JSON으로 작성하세요.
 
 [분석 범위]
 1. preparationAnalysis
-- 준비 내용 및 준비기간을 분석한다.
-- 준비기간이 사례에 명시되지 않으면 준비 항목의 단계와 상담 확인 과제로 정리한다.
-- keyPreparationSteps는 실행 순서가 보이도록 3~6개로 작성한다.
+- 선택 사례에서 확인되는 준비 내용을 교차 분석하세요.
+- 사례집에 준비기간이 명시되지 않으면 검색 및 일반 직무 지식을 바탕으로 통상적인 준비 내용과 기간을 제안하세요.
+- 모든 내용을 서술식이 아닌 개조식으로 작성하되, 각 사례에서 공통적으로 확인되는 내용과 차이점이 드러나도록 작성하세요.
+- caseCheck에는 CASE-0050 같은 사례 ID 대신 해당 사례의 현재직업명을 사용하세요.
+- typicalPreparation에는 무엇을 준비해야 하는지, 즉 준비의 범위와 주제를 작성하세요.
+- preparationMethod에는 그 준비를 어떻게 실행할지, 즉 구체적인 행동 방법을 작성하세요.
 
-2. certificateInfo
-- requiredCertificates는 사례와 직무상 필수 가능성이 높은 자격만 작성한다.
-- helpfulCertificates는 있으면 유리한 자격, 교육, 훈련을 작성한다.
-- preparationResources는 공공 고용서비스, 훈련, 자격 준비, 현장 경험 등 실행 가능한 준비 정보로 작성한다.
+2. certificatePreparationInfo
+- 사례집에 자격증이 명시되지 않아도 검색 및 일반 직무 지식을 바탕으로 통상적인 자격증, 교육, 준비 방법과 기간을 제안하세요.
+- 모든 내용을 서술식이 아닌 개조식으로 작성하되, 각 자격증이나 준비 항목마다 목적과 방법, 기간, 전망, 주의사항이 드러나도록 작성하세요.
+- 필수 자격과 도움이 되는 준비를 구분할 수 있도록 목적과 확인 사항을 작성하세요.
 
-3. counselingActionMemo
-- counselorMemo는 상담사가 바로 말하거나 기록할 수 있는 문장으로 작성한다.
-- nextActions는 다음 상담 전까지 실행할 과제를 3~5개로 작성한다.
-- riskChecks는 자격 요건, 시간/비용, 건강, 통근, 디지털 역량, 경력 공백 등 확인할 위험요인을 3~5개로 작성한다.
+3. counselingComments
+- 선택된 성공사례들을 교차 분석하여 참여자의 이전 경력과 연결되는 상담 활용 코멘트를 작성하세요.
+
+4. counselingQuestions
+- 선택된 성공사례, 참여자 정보, 상담사가 작성한 연결 시사점(counselorInsight)을 교차 분석하여 상담 중 내담자에게 바로 물어볼 질문을 5개 작성하세요.
+- counselorInsight가 작성되어 있으면 그 내용에서 확인하거나 구체화해야 할 부분을 질문에 반드시 반영하세요.
+- 각 질문은 현재 참여자의 경력, 희망 방향, 준비 여건과 선택 사례의 구체적인 연결점을 확인할 수 있어야 합니다.
+- 미리 정해진 일반 질문이나 상담사를 향한 질문이 아니라, 상담사가 내담자에게 자연스럽게 말할 수 있는 존댓말 의문문으로 작성하세요.
+- 질문마다 한 가지 주제만 묻고, 답을 유도하거나 성공 가능성을 단정하지 마세요.
 
 [작성 원칙]
-- 선택된 사례 데이터와 상담사 메모를 우선 근거로 사용한다.
-- 내담자의 이전 경력과 성공사례의 전환 경로를 연결한다.
-- 특정 자격증, 교육기관, 준비기간이 사례에 없으면 단정하지 않는다.
-- 모든 문장은 한국어로 작성한다.
-- JSON 외 텍스트는 출력하지 않는다.
+- 검색 또는 일반 직무 지식으로 보완한 정보에는 "일반적으로", "통상", "확인 필요" 표현을 사용하세요.
+- 급여, 기간, 자격요건을 확정적으로 단정하지 마세요.
+- 모든 문장은 한국어로 작성하세요.
+- JSON 외 텍스트는 출력하지 마세요.
 
 [입력 데이터]
 ${JSON.stringify(input, null, 2)}
 
 [JSON Schema]
-${JSON.stringify(SUCCESS_ANALYSIS_SCHEMA)}`;
+${JSON.stringify(SUCCESS_ANALYSIS_SCHEMA, null, 2)}`;
   }
 };
 

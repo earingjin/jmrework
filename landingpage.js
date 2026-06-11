@@ -16,7 +16,7 @@ const LANDING_CONTENT = {
   hero: {
     badge: 'RE:WORK CENTER',
     title: 'AI 커리어 리포트 플랫폼',
-    description: '상담사는 내담자와의 대화에 집중할 수 있도록, AI가 상담에 필요한 리포트를 사전에 준비합니다.',
+    description: '내담자와의 대화에 집중할 수 있도록, AI가 상담에 필요한 리포트를 사전에 준비합니다.',
     imageAlt: '상담사가 내담자와 커리어 상담을 진행하는 장면'
   },
   reports: {
@@ -30,7 +30,7 @@ const LANDING_CONTENT = {
         '직업흥미·성격·생활사 통합 분석',
         '직무 적합도 및 강점 해석',
         '희망 직무 연결 분석',
-        '지원자 맞춤 합격 전략 제안'
+        '내담자 맞춤 합격 전략 제안'
       ],
       chips: ['직업 흥미', 'SWOT', '전략 키워드', '직무 추천'],
       imageKey: 'interestReport',

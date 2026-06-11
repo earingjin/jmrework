@@ -5,7 +5,6 @@ RE:WORK CENTER 프로토타입 배포 패키지
 - styles.css
 - landingData.js
 - contentData.js
-- mockData.js
 - successData.js
 
 실행 방법

@@ -76,14 +76,14 @@ SUCCESS_CASE_SEARCH_ASSIST.ui={
   prepStrategy:'추천 준비 전략',
   topCases:'대표 성공사례 TOP',
 
-  topCasesDesc:'아래 사례는 SUCCESS_CASE_DB 검색 결과 중 유사도가 높은 사례입니다.',
+  topCasesDesc:'아래 사례는 공공기관 사례집 검색 결과 중 유사도가 높은 사례입니다.',
   patternAnalysis:'공통 전환 패턴 분석',
   patternDesc:'검색 결과의 전환유형, 현재직업, 준비방법을 기준으로 요약했습니다.',
-  prepAnalysis:'준비 내용 및 준비기간 분석',
+  prepAnalysis:'준비 내용 및 기간 분석',
   prepDesc:'사례집에 기재된 준비방법과 활동 항목을 기준으로 상담 점검표를 구성했습니다.',
-  certInfo:'자격증 / 준비 정보',
+  certInfo:'자격증 정보',
   advice:'상담 활용 코멘트',
-  memo:'상담 실행 메모'
+  memo:'상담에 활용할 질문'
 };
 
 Object.assign(SUCCESS_CASE_SEARCH_ASSIST.ui,{
@@ -129,11 +129,6 @@ Object.assign(SUCCESS_CASE_SEARCH_ASSIST.ui,{
   certPath:'추천 학습 경로',
   certPeriod:'평균 준비',
   certOutlook:'급여·처우 / 전망',
-  q1:'내담자의 이전 경력 중 위 대표 사례의 이전경력과 가장 가까운 부분은 무엇입니까?',
-  q2:'확인된 자격·교육 중 현재 조건에서 1개월 안에 시작 가능한 항목은 무엇입니까?',
-  q3:'기존 경력을 검색 직무 분야의 채용 언어로 바꾸면 어떤 문장이 됩니까?',
-  q4:'유사 사례의 준비방법 중 비용·시간 부담이 낮은 실행계획은 무엇입니까?',
-  q5:'지원 전 확인해야 할 채용공고, 교육기관, 공공지원 프로그램은 무엇입니까?',
   sourceField:'출처문구',
   sourceLabel:'출처',
   selectionNotice:'보고 싶은 성공사례를 1개 이상 선택한 뒤 상담지원 리포트를 생성하세요. 선택 개수 제한은 없습니다.',
@@ -141,3 +136,4 @@ Object.assign(SUCCESS_CASE_SEARCH_ASSIST.ui,{
   missingSelected:'선택한 성공사례를 현재 검색 결과에서 찾을 수 없습니다. 다시 검색 후 선택해주세요.',
   selectedCount:'건 선택'
 });
+// TODO(server-db): 상용 배포 시 SUCCESS_CASE_DB를 권한이 적용된 서버 DB/API로 이전합니다.
