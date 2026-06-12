@@ -42,7 +42,7 @@ function renderPdfQuestions(items, limit) {
 function renderNoTargetJobReportSafe(r) {
   const pi = r.participantInfo || {};
   return `<div class="interest-report"><h1>${escapeHtml(pi.name || '내담자')} 직업선호도검사 리포트 (희망 직무 없음)</h1>
-<p class="small">검사 결과 기반 직무·진로 탐색</p>
+<p class="small">본 리포트는 AI가 분석한 데이터이며 내용에 대한 최종 평가는 전문가에게 있습니다.</p>
 <h2>내담자 정보</h2>
 <div class="summary-box"><p><strong>내담자:</strong> ${escapeHtml(pi.name || '내담자')}</p><p><strong>나이:</strong> ${escapeHtml(pi.age || '미입력')}</p><p><strong>학력:</strong> ${escapeHtml(pi.education || '미입력')}</p><p><strong>추천 직무군:</strong> ${escapeHtml(pi.recommendedJobGroup || '추천 직무는 추가 상담을 통해 보완 필요')}</p><p><strong>직업흥미검사 핵심 코드:</strong> ${escapeHtml(pi.coreCode || '미입력')}</p><p><strong>한 줄 강점 요약:</strong> ${escapeHtml(pi.strengthSummary || '추가 분석 필요')}</p></div>
 <h2>직업흥미·성격·생활사·전공·자격증 통합 피드백</h2>
@@ -61,7 +61,7 @@ ${safeReportList(r.encouragementSlogans)}</div>`;
 function renderTargetInterestReportFromData(r) {
   const pi = r.participantInfo || {};
   return `<div class="interest-report"><h1>${escapeHtml(pi.name || '내담자')} 직업선호도검사 리포트 (${escapeHtml(pi.targetJob || '희망 직무')})</h1>
-<p class="small">희망직무 기반 직무 적합도 분석</p>
+<p class="small">본 리포트는 AI가 분석한 데이터이며 내용에 대한 최종 평가는 전문가에게 있습니다.</p>
 <h2>내담자 정보</h2>
 <div class="summary-box"><p><strong>내담자:</strong> ${escapeHtml(pi.name || '내담자')}</p><p><strong>나이:</strong> ${escapeHtml(pi.age || '미입력')}</p><p><strong>학력:</strong> ${escapeHtml(pi.education || '미입력')}</p><p><strong>희망직무:</strong> ${escapeHtml(pi.targetJob || '미입력')}</p><p><strong>직업흥미검사 핵심 코드:</strong> ${escapeHtml(pi.coreCode || '미입력')}</p><p><strong>한 줄 강점 요약:</strong> ${escapeHtml(pi.strengthSummary || '추가 분석 필요')}</p></div>
 <h2>희망직무·검사 결과·전공 및 자격증에 대한 피드백</h2>

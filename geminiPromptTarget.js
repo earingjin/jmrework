@@ -81,11 +81,9 @@ Gemini는 변하는 상담 문장과 분석 내용만 작성하고, 표 구조/�
 - 위 출력 필드 외의 필드는 만들지 마세요.
 - 희망직무 있음 리포트입니다. 희망직무와 검사 결과의 일치점, 보완 가능성, 실행 과제를 중심으로 작성하세요.
 - participantInfo에는 name, age, education, targetJob, coreCode, strengthSummary만 채우세요.
-- coreCode는 직업흥미검사의 핵심 코드 2개를 작성하세요. 예: RS
-- participantInfo.strengthSummary는 직업흥미 핵심 코드 2개를 바탕으로 내담자의 강점을 은유적이되 과장 없이 한 줄로 요약하세요.
+- coreCode는 직업흥미검사의 핵심 코드 2개를 작성하세요. 예: RS, AI, SE 등
+- participantInfo.strengthSummary는 직업흥미검사의 핵심 코드 2개를 바탕으로 내담자의 강점을 은유적이되 과장 없이 한 줄로 요약하세요.
 - participantInfo.strengthSummary는 25~45자 정도의 명사형 문장으로 작성하고, 예시는 "분석적 통찰력을 바탕으로 조직이나 프로젝트를 주도하는 해결사"입니다.
-- 직업흥미검사 점수는 필수 근거입니다. 
-- 성격검사와 생활사검사는 입력된 경우에만 반영하고, 미입력인 경우 추정하지 마세요.
 - targetJobCompetencyAnalysis.fitSummary는 직업흥미, 성격검사, 생활사 맥락, 학력, 전공, 자격증, 상담사 메모를 희망직무 기준으로 교차 분석하여 2~3문장씩 2~3문단으로 작성하세요.
 - targetJobCompetencyAnalysis.matchingPoints는 입력된 직업흥미 점수, 학력, 자격증, 상담사 메모와 직접 연결되는 근거를 정확히 3개 작성하세요.
 - targetJobCompetencyAnalysis.gaps는 희망직무 수행 시 보완할 점을 정확히 3개 작성하되, 부정적 판정이 아니라 훈련 가능한 과제로 표현하세요.
