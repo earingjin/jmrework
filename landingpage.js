@@ -16,7 +16,7 @@ const LANDING_CONTENT = {
   hero: {
     badge: 'RE:WORK CENTER',
     title: 'AI 커리어 리포트 플랫폼',
-    description: '내담자와의 대화에 집중할 수 있도록, AI가 상담에 필요한 리포트를 사전에 준비합니다.',
+    description: '내담자와의 대화에 집중할 수 있도록, AI가 상담에 필요한 리포트를 사전에 준비해 드립니다.',
     imageAlt: '상담사가 내담자와 커리어 상담을 진행하는 장면'
   },
   reports: {
@@ -55,23 +55,23 @@ const LANDING_CONTENT = {
   },
   quality: {
     id: 'quality',
-    title: '한층 더 업그레이드된 상담 품질로 성공적인 취업을 지원합니다.',
+    title: '한층 더 업그레이드된 상담으로 성공적인 취업을 지원합니다.',
     description: 'AI가 상담을 대체하는 구조가 아닌, 상담사가 더 정확한 근거를 가지고 더 빠르게 상담을 준비할 수 있도록 설계했습니다.',
     cards: [
-      { number: '1', title: '상담 맥락 기반 분석', description: '참여자 경력, 희망 방향, 상담 메모를 함께 반영해 맞춤형 상담 자료로 구성합니다.' },
-      { number: '2', title: '상담사 검토 중심', description: 'AI 초안을 그대로 전달하지 않고 상담사가 수정·보완한 최종 리포트만 저장합니다.' },
-      { number: '3', title: '채용정보까지 연결', description: '기업 분석, 성공사례, 신중년 경력자산 리포트를 현재 채용정보 매칭과 연결합니다.' }
+      { number: '1', title: '상담 맥락 기반 분석', description: '참여자 경력, 희망 방향, 상담 메모를 함께 반영해 맞춤형 상담 자료를 구성합니다.' },
+      { number: '2', title: '상담사 검토 중심', description: 'AI 초안을 상담사가 수정·보완할 수 있는 기능을 제공합니다.' },
+      { number: '3', title: '채용정보까지 연결', description: '직업선호도검사 분석 결과를 현재 진행중인 채용정보와 연결합니다.' }
     ]
   },
   featureStrip: [
-    { title: '직무 분석 리포트', description: '실제 직무기술서 초안 수준' },
-    { title: '직업선호도검사 리포트', description: '6각형 차트 기반 진로 해석' },
+    { title: '직무 분석 리포트', description: '실제 직무기술서 초안 수준으로 분석' },
+    { title: '직업선호도검사 리포트', description: '통합 교차분석으로 진로 방향 제시' },
     { title: '성공사례 리포트', description: '실제 사례 기반 실행 로드맵' },
-    { title: '채용정보 매칭', description: '현재 공고 기반 추천 정리' }
+    { title: '면접 준비 리포트', description: '예상 질문 및 답변 준비' }
   ],
   cta: {
-    title: '상담 준비 시간을 줄이고, 상담 품질은 높이세요.',
-    description: '참여자 등록부터 리포트 생성, 채용정보 매칭, 상담 이력 관리까지 하나의 화면에서 운영합니다.'
+    title: '상담 준비 시간은 줄이고, 상담 품질은 높이세요.',
+    description: '전문적인 리포트와 함께 내담자에게 맞춤형 커리어 전략을 제안하세요.',
   },
   footer: {
     brand: 'AI Career Solution',
