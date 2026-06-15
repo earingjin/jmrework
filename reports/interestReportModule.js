@@ -182,8 +182,7 @@ async function generateGeminiInterestReport(p,target,hasTarget){if(!hasTarget)re
         const html = withReportBrand(generated.html, title);
         state.currentReport = { id: null, type: 'interest', title, participantId: p.id, participantName: p.name, html, createdAt: today() };
       } catch (err) {
-        toast(err.message || 'Gemini 분석 중 오류가 발생했습니다.');
-        return;
+        throw err;
       }
       finishGeneratedReportUi();
       return { tokenUsage: generated.tokenUsage };

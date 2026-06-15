@@ -291,3 +291,21 @@
   width:100%;
   max-width:none;
 }
+
+.report-generating{
+  cursor:wait;
+}
+.report-spinner{
+  width:16px;
+  height:16px;
+  display:inline-block;
+  margin-right:8px;
+  border:2px solid rgba(255,255,255,.45);
+  border-top-color:#fff;
+  border-radius:50%;
+  vertical-align:-3px;
+  animation:report-spin .75s linear infinite;
+}
+@keyframes report-spin{
+  to{transform:rotate(360deg)}
+}

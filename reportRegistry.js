@@ -3,7 +3,7 @@
     {
       id: 'interest',
       title: '직업선호도검사 리포트',
-      menuLabel: '직업선호도검사 리포트(Beta)',
+      menuLabel: '직업선호도검사 리포트',
       available: true,
       menuOrder: 10,
       quickAction: {
@@ -16,7 +16,7 @@
     {
       id: 'success',
       title: '취업 성공 사례',
-      menuLabel: '취업 성공 사례(Beta)',
+      menuLabel: '취업 성공 사례',
       available: true,
       menuOrder: 20,
       quickAction: {

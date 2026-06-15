@@ -13,7 +13,7 @@
         const generated = await generateGeminiJobAnalysis(p, target);
         finishGeneratedReport('jobAnalysis', p, generated.title, generated.html);
       } catch (err) {
-        toast(err.message || 'Gemini 분석 중 오류가 발생했습니다.');
+        throw err;
       }
     }
   });
