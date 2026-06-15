@@ -1,13 +1,13 @@
 (function () {
-  function geminiEndpoint(model, apiKey) {
-    return `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  function geminiEndpoint() {
+    return '/api/gemini';
   }
 
-  function generateContent({ apiKey, model, body, request = fetch }) {
-    return request(geminiEndpoint(model, apiKey), {
+  function generateContent({ model, body, request = fetch }) {
+    return request(geminiEndpoint(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      body: JSON.stringify({ model, ...body })
     });
   }
 
