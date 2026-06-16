@@ -207,7 +207,80 @@ function landingTemplate() {
 }
 function goLogin(){pushHistory();state.view='login';state.user=null;render()}
 function goLanding(){pushHistory();state.user=null;state.view='landing';render()}
-function loginTemplate(){const content=LANDING_CONTENT;const demoAcc=(state.data.accounts||[]).find(a=>normalizeAccountRole(a.role)==='상담사')||{loginId:'counselor01',password:'1234'};const loginId=demoAcc.loginId;const password=demoAcc.password;const title='LOGIN';const desc='발급받은 상담사 아이디와 비밀번호로 접속합니다.';const demo=`상담사: ${loginId} / ${password}`;return `<div class="login-screen"><section class="login-hero"><div class="real-hero-copy"><span class="real-hero-badge">${content.hero.badge}</span><h1>${content.hero.title}</h1><p>${content.hero.description}</p></div><div class="real-hero-image"><img src="${LANDING_IMAGES.hero}" alt="${content.hero.imageAlt}"></div></section><section class="login-panel"><div class="login-box"><h2>${title}</h2><p>${desc}</p><div class="field"><label>아이디</label><input id="loginId" value="${escapeHtml(loginId)}" autocomplete="username"></div><div class="field"><label>비밀번호</label><input id="loginPw" type="password" value="${escapeHtml(password)}" autocomplete="current-password"></div><button type="button" class="btn full" onclick="login()">접속하기</button><button type="button" class="btn secondary full" onclick="goLanding()" style="margin-top:8px">첫 화면으로 돌아가기</button><div class="demo-info"><strong>시연용 계정</strong><br>${escapeHtml(demo)}</div></div></section></div>`}function login(){const loginId=document.getElementById('loginId').value.trim();const password=document.getElementById('loginPw').value;const acc=(state.data.accounts||[]).find(a=>String(a.loginId||'').trim()===loginId&&String(a.password||'')===password);if(!acc){toast('아이디 또는 비밀번호가 올바르지 않습니다.');return}const expectedRole=APP_ROLE==='admin'?'관리자':'상담사';const actualRole=normalizeAccountRole(acc.role);if(actualRole!==expectedRole){toast(`${expectedRole} 계정으로만 접속할 수 있습니다.`);return}acc.role=actualRole;pushHistory();state.user={accountId:acc.id,loginId:acc.loginId,name:acc.name,role:actualRole};state.view='app';state.active=APP_ROLE==='admin'?'admin':'dashboard';if(!state.selectedParticipantId&&state.data.participants[0])state.selectedParticipantId=state.data.participants[0].id;persist();render()}
+function loginTemplate(){const content=LANDING_CONTENT;const demoAcc=(state.data.accounts||[]).find(a=>normalizeAccountRole(a.role)==='상담사')||{loginId:'counselor01',password:'1234'};const loginId=demoAcc.loginId;const password=demoAcc.password;const title='LOGIN';const desc='발급받은 상담사 아이디와 비밀번호로 접속합니다.';const demo=`상담사: ${loginId} / ${password}`;return `<div class="login-screen"><section class="login-hero"><div class="real-hero-copy"><span class="real-hero-badge">${content.hero.badge}</span><h1>${content.hero.title}</h1><p>${content.hero.description}</p></div><div class="real-hero-image"><img src="${LANDING_IMAGES.hero}" alt="${content.hero.imageAlt}"></div></section><section class="login-panel"><div class="login-box"><h2>${title}</h2><p>${desc}</p><div class="field"><label>아이디</label><input id="loginId" value="${escapeHtml(loginId)}" autocomplete="username"></div><div class="field"><label>비밀번호</label><input id="loginPw" type="password" value="${escapeHtml(password)}" autocomplete="current-password"></div><button type="button" class="btn full" onclick="login()">접속하기</button><button type="button" class="btn secondary full" onclick="goLanding()" style="margin-top:8px">첫 화면으로 돌아가기</button><div class="demo-info"><strong>시연용 계정</strong><br>${escapeHtml(demo)}</div></div></section></div>`}async function login(){
+  const loginId=document.getElementById('loginId').value.trim();
+  const password=document.getElementById('loginPw').value;
+  const expectedRole=APP_ROLE==='admin'?'관리자':'상담사';
+  const errorMessage='아이디 또는 비밀번호를 확인해주세요';
+  if(!loginId||!password){toast(errorMessage);return}
+
+  let serverAccount=null;
+  let serverAuthFailed=false;
+  try{
+    const resp=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({loginId,password})});
+    if(resp.ok){
+      const data=await resp.json().catch(()=>null);
+      serverAccount=data?.account||null;
+      if(serverAccount&&normalizeAccountRole(serverAccount.role)===expectedRole){
+        serverAccount.role=normalizeAccountRole(serverAccount.role);
+        state.data.accounts=state.data.accounts||[];
+        const cacheIndex=state.data.accounts.findIndex((a)=>String(a.loginId||'').trim().toLowerCase()===loginId.toLowerCase());
+        const cached={
+          id:serverAccount.id,
+          loginId:serverAccount.login_id||serverAccount.loginId||loginId,
+          name:serverAccount.name||'',
+          role:serverAccount.role,
+          branch:serverAccount.branch||'미지정',
+          status:serverAccount.status||'active',
+          createdAt:serverAccount.created_at||today(),
+          lastLoginAt:serverAccount.last_login_at||null,
+          loginCount:serverAccount.login_count||0,
+        };
+        if(cacheIndex>=0){
+          state.data.accounts[cacheIndex]={...state.data.accounts[cacheIndex],...cached};
+        } else {
+          state.data.accounts.push(cached);
+        }
+        state.user={accountId:serverAccount.id,loginId:cached.loginId,name:cached.name,role:cached.role};
+        pushHistory();
+        state.view='app';
+        state.active=APP_ROLE==='admin'?'admin':'dashboard';
+        if(!state.selectedParticipantId&&state.data.participants[0])state.selectedParticipantId=state.data.participants[0].id;
+        persist();
+        render();
+        return;
+      }
+      serverAuthFailed=true;
+    } else if(resp.status===401){
+      toast(errorMessage);
+      return;
+    } else {
+      serverAuthFailed=true;
+    }
+  } catch(err){
+    serverAuthFailed=true;
+  }
+
+  if(serverAuthFailed){
+    const acc=(state.data.accounts||[]).find((a)=>String(a.loginId||'').trim().toLowerCase()===loginId.toLowerCase()&&String(a.password||'')===password);
+    if(acc){
+      const actualRole=normalizeAccountRole(acc.role);
+      if(actualRole===expectedRole){
+        acc.role=actualRole;
+        state.user={accountId:acc.id,loginId:acc.loginId,name:acc.name,role:actualRole};
+        pushHistory();
+        state.view='app';
+        state.active=APP_ROLE==='admin'?'admin':'dashboard';
+        if(!state.selectedParticipantId&&state.data.participants[0])state.selectedParticipantId=state.data.participants[0].id;
+        persist();
+        render();
+        return;
+      }
+    }
+  }
+
+  toast(errorMessage);
+}
 function logout(){state.user=null;resetSensitiveSessionData();state.view='landing';persist();render()}
 function navButton(id,label){return `<button class="${state.active===id?'active':''}" onclick="setSection('${id}')"><span>${label}</span><span>›</span></button>`}function subNavButton(definition){const label=definition.menuLabel||definition.title;return `<button class="${state.active==='modules'&&state.activeModule===definition.id?'active':''}" onclick="setReportModule('${definition.id}')"><span>${definition.available?label:label+' (준비중)'}</span></button>`}function reportSubNavHtml(){return reportMenuDefinitions().map(subNavButton).join('')}function setReportModule(module){if(state.active!=='modules'||state.activeModule!==module)pushHistory();state.active='modules';state.activeModule=module;state.currentReport=null;state.editMode=false;render()}function toggleReportMenu(){state.reportMenuOpen=!state.reportMenuOpen;render()}function goDashboard(){if(state.active!=='dashboard')pushHistory();state.active='dashboard';state.activeModule='interest';state.currentReport=null;state.editMode=false;state.reportMenuOpen=false;render()}function activeMainSectionHtml(){if(state.active==='modules')return modulesSection();if(state.active==='jobs')return jobMatchingSection();if(state.active==='account')return accountSection();if(state.active==='reports')return reportsSection();return dashboardSection()}function shellTemplate(){const sideBrand=`<div class="side-brand" role="button" tabindex="0" aria-label="메인 대시보드로 이동" onclick="goDashboard()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();goDashboard()}"><img src="${BRAND_LOGO}" alt="${BRAND_NAME}" class="sidebar-logo"><div class="title">${BRAND_NAME}</div><div class="sub">${BRAND_SUBTITLE}</div><div class="role-badge">${escapeHtml(state.user.name)} · ${escapeHtml(state.user.role)}</div></div>`;const reportMenuStyle=state.reportMenuOpen?'':'style="display:none"';return `<div class="shell"><aside class="sidebar no-print">${sideBrand}<nav class="nav"><button class="${state.active==='modules'?'active':''}" onclick="toggleReportMenu()"><span>리포트 생성</span><span>${state.reportMenuOpen?'⌃':'⌄'}</span></button><div class="subnav" ${reportMenuStyle}>${reportSubNavHtml()}</div>${navButton('account','내 계정')}</nav><div style="margin-top:20px;padding:10px"><button class="btn secondary full" onclick="logout()">로그아웃</button></div><div class="sidebar-copyright">© 2026 JM Career. All Rights Reserved.</div></aside><main class="main">${activeMainSectionHtml()}</main></div>`}function setSection(id){if(state.active!==id)pushHistory();state.active=id;render()}function activateSection(id){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));const el=document.getElementById('section-'+id);if(el)el.classList.add('active')}function pageTitle(title,desc,actions=''){const backBtn=state.history&&state.history.length?`<button class="btn secondary" onclick="goBack()">← 뒤로가기</button>`:'';return `<div class="topbar no-print"><div><h2>${title}</h2><p>${desc}</p></div><div class="actions">${backBtn}${actions}</div></div>`}
 function workspaceIcon(name){const icons={intake:'<path d="M7 4h10v4H7z"></path><path d="M6 8h12v12H6z"></path><path d="M9 12h6"></path><path d="M9 16h4"></path>',analyze:'<circle cx="11" cy="11" r="5"></circle><path d="M15 15l4 4"></path><path d="M11 8v6"></path><path d="M8 11h6"></path>',draft:'<path d="M5 4h10l4 4v12H5z"></path><path d="M15 4v4h4"></path><path d="M8 13h8"></path><path d="M8 17h6"></path>',deliver:'<path d="M4 5h16v14H4z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path><path d="M16 16l2 2 3-4"></path>',interest:'<path d="M12 3l8 5v8l-8 5-8-5V8z"></path><path d="M12 7v10"></path><path d="M7.5 10l9 4"></path><path d="M16.5 10l-9 4"></path>',success:'<path d="M4 18V6"></path><path d="M4 18h16"></path><path d="M7 15l3-4 3 2 5-7"></path><path d="M16 6h2v2"></path>',job:'<path d="M8 7V5h8v2"></path><path d="M4 8h16v10H4z"></path><path d="M9 12h6"></path><path d="M12 8v10"></path>',interview:'<path d="M5 6h14v9H8l-3 3z"></path><path d="M9 10h6"></path><path d="M9 13h4"></path>'};return `<svg class="workspace-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]||icons.draft}</svg>`}
