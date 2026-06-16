@@ -13,7 +13,7 @@ function loginTemplate() {
           <p>관리자 계정으로 접속해주세요.</p>
           <div class="field"><label>아이디</label><input id="loginId" value="admin"></div>
           <div class="field"><label>비밀번호</label><input id="loginPw" type="password" value="admin123"></div>
-          <button class="btn full" data-action="login">접속하기</button>
+          <button class="btn full" data-action="login" onclick="login();render()">접속하기</button>
           <div class="demo-info">시연용 계정: admin / admin123</div>
         </div>
       </section>
