@@ -59,7 +59,9 @@ function sanitizeUsagePayload(payload) {
     'counselorName',
     'branch',
     'tokenUsage',
-    'retryCount'
+    'retryCount',
+    'finishReason',
+    'parseStage'
   ];
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return {};
   return Object.fromEntries(
