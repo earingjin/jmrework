@@ -19,7 +19,7 @@ async function saveToDb(events) {
 async function getFromDb(limit = 5000) {
   if (!db || !db.enabled) throw new Error('DB not configured');
   const l = Math.min(Math.max(Number(limit) || 5000, 1), 20000);
-  const res = await db.query('SELECT COALESCE(client_event_id, id::text) AS "id", event_name AS "eventName", payload AS "payload", recorded_at AS "recordedAt", created_at FROM usage_events ORDER BY recorded_at DESC LIMIT $1', [l]);
+  const res = await db.query('SELECT COALESCE(client_event_id, id::text) AS "id", event_name AS "eventName", payload AS "payload", recorded_at AS "recordedAt", client_counselor_id AS "clientCounselorId", created_at FROM usage_events ORDER BY recorded_at DESC LIMIT $1', [l]);
   // return in ascending order to be consistent with file-based read behaviour
   return (res.rows || []).reverse();
 }
