@@ -110,8 +110,14 @@ function averageInputScore(group){return hasInterestValues(group)?noTargetAverag
 function noTargetPersonalityScoresFromInput(personality){if(!hasInterestValues(personality))return{};return{extroversion:averageInputScore(personality.extraversion),agreeableness:averageInputScore(personality.agreeableness),conscientiousness:averageInputScore(personality.conscientiousness),emotionalInstability:averageInputScore(personality.emotionalInstability),openness:averageInputScore(personality.openness)}}
 function noTargetLifeScoresFromInput(life){if(!hasInterestValues(life))return{};return{relationship:life['대인관계']??'',independence:life['독립심']??'',family:life['가족친화']??'',ambition:life['야망']??'',academicAchievement:life['학업성취']??'',artistry:life['예술성']??'',sports:life['운동선호']??'',religion:life['종교성']??'',jobSatisfaction:life['직무만족']??''}}
 function noTargetCoreCodeFromInput(input){return interestCoreCodeFromData(input).split(' ')[0]||''}
-function parseInterestGeminiJson(text){try{return parseGeminiJson(text)}catch(err){const raw=String(text||'');console.error('직업선호도검사 Gemini JSON 파싱 실패',err);console.error('Gemini 원문 응답 앞 1000자:',raw.slice(0,1000));console.error('Gemini 원문 응답 뒤 1000자:',raw.slice(-1000));throw err}}
-async function requestGeminiNoTargetJobReportData(input){const body={system_instruction:{parts:[{text:noTargetGeminiSystemInstruction()}]},contents:[{role:'user',parts:[{text:noTargetGeminiUserPrompt(input)}]}],generationConfig:{temperature:.12,topP:.65,responseMimeType:'application/json'}};const res=await fetchGeminiInterestWithModelFallback(body);const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error(data?.error?.message||`Gemini API 오류 (${res.status})`);const text=(data?.candidates?.[0]?.content?.parts||[]).map(part=>part.text||'').join('\n').trim();if(!text)throw new Error('Gemini 응답에서 JSON 내용을 찾지 못했습니다.');return{...normalizeNoTargetJobReportDataAligned(parseInterestGeminiJson(text),input),tokenUsage:normalizeTokenUsage(data.usageMetadata)}}
+function logInterestJsonParseFailure(err, raw){
+  const rawPreview=String(raw||'').slice(0,1000);
+  console.error({errorType:err?.errorType||'JSON_PARSE_ERROR',parseStage:err?.parseStage||'unknown',errorMessage:err?.message||String(err),rawPreview});
+}
+function parseInterestGeminiJson(text){
+  try{return parseGeminiJson(text)}catch(err){logInterestJsonParseFailure(err,text);throw err}
+}
+async function requestGeminiNoTargetJobReportData(input){const body={system_instruction:{parts:[{text:noTargetGeminiSystemInstruction()}]},contents:[{role:'user',parts:[{text:noTargetGeminiUserPrompt(input)}]}],generationConfig:{temperature:.12,topP:.65,responseMimeType:'application/json'}};const res=await fetchGeminiInterestWithModelFallback(body);const data=await res.json().catch(()=>({}));if(!res.ok)throw new Error(data?.error?.message||`Gemini API 오류 (${res.status})`);const text=(data?.candidates?.[0]?.content?.parts||[]).map(part=>part.text||'').join('\n').trim();if(!text)throw new Error('Gemini 응답에서 JSON 내용을 찾지 못했습니다.');const parsed=await parseInterestGeminiJson(text);return{...normalizeNoTargetJobReportDataAligned(parsed,input),tokenUsage:normalizeTokenUsage(data.usageMetadata)}}
 async function generateNoTargetJobInterestReport(p){
   const btn=document.getElementById('interestButton');
   const oldText=btn?btn.textContent:'';
