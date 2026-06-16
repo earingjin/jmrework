@@ -228,20 +228,33 @@ async function importAccounts() {
   try {
     const result = await parseCounselorAccountsFromFile(file);
     const adminAccounts = state.data.accounts.filter((account) => account.role === "관리자");
-    const existingCounselors = state.data.accounts.filter((account) => account.role === "상담사");
-    const counselorAccounts = mergeImportedCounselorAccounts(result.accounts, existingCounselors);
-    state.data.accounts = [...adminAccounts, ...counselorAccounts];
-    persist();
-    state.importResult = result;
-    state.active = "admin";
-    render();
-    const searchInput = document.getElementById("accountSearch");
-    const statusFilter = document.getElementById("accountStatusFilter");
-    if (searchInput) searchInput.value = "";
-    if (statusFilter) statusFilter.value = "all";
-    filterAccounts();
-    toast("기존 상담사 명단이 삭제되고 신규 명단으로 교체되었습니다.");
-    return true;
+    // send parsed accounts to server for replace import
+    const counselorAccounts = result.accounts || [];
+    try {
+      const resp = await fetch('/api/accounts/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accounts: counselorAccounts }) });
+      const data = await resp.json().catch(() => null);
+      if (!resp.ok) {
+        toast((data && data.error && data.error.message) ? data.error.message : '서버에 계정 저장 중 오류가 발생했습니다.');
+        return false;
+      }
+      // keep localStorage as backup but update UI from the new list
+      state.data.accounts = [...adminAccounts, ...counselorAccounts];
+      persist();
+      state.importResult = { totalRows: result.totalRows, importedCount: data.importedCount || result.importedCount, excludedCount: data.excludedCount || result.excludedCount };
+      state.active = "admin";
+      render();
+      const searchInput = document.getElementById("accountSearch");
+      const statusFilter = document.getElementById("accountStatusFilter");
+      if (searchInput) searchInput.value = "";
+      if (statusFilter) statusFilter.value = "all";
+      filterAccounts();
+      toast('업로드 성공: 상담사 명단이 서버에 저장되었습니다.');
+      return true;
+    } catch (err) {
+      toast('서버에 계정 저장 중 오류가 발생했습니다.');
+      console.error('importAccounts server error', err);
+      return false;
+    }
   } catch (error) {
     toast(error.message || "파일 업로드 중 오류가 발생했습니다.");
     return false;

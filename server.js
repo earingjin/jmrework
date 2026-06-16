@@ -131,6 +131,14 @@ fs.mkdirSync(logDir, { recursive: true });
 
 app.use(express.json({ limit: '35mb' }));
 
+// mount accounts routes (provides /api/auth/login, /api/accounts, /api/accounts/import)
+try {
+  const accountsRoutes = require('./routes/accounts');
+  app.use('/api', accountsRoutes);
+} catch (e) {
+  console.error('Could not mount accounts routes', e);
+}
+
 app.post('/api/gemini', async (req, res) => {
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const model = typeof req.body?.model === 'string' ? req.body.model.trim() : '';

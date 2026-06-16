@@ -39,4 +39,20 @@ router.get('/accounts', async (req, res) => {
   }
 });
 
+// POST /api/accounts/import
+router.post('/accounts/import', async (req, res) => {
+  if (!db || !db.enabled) return res.status(503).json({ error: { message: 'DB not configured' } });
+  try {
+    const payload = req.body || {};
+    const accounts = Array.isArray(payload.accounts) ? payload.accounts : (Array.isArray(payload) ? payload : []);
+    if (!accounts.length) return res.status(400).json({ error: { message: 'No accounts provided' } });
+
+    const result = await db.replaceCounselorAccounts(accounts);
+    return res.json({ success: true, importedCount: result.importedCount, excludedCount: result.excludedCount, totalRows: accounts.length });
+  } catch (err) {
+    console.error('[accounts-import-error]', err);
+    return res.status(500).json({ error: { message: String(err.message || err) } });
+  }
+});
+
 module.exports = router;
