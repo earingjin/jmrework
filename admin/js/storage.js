@@ -39,6 +39,7 @@ function loadData() {
     accounts,
     reports: [],
     usageEvents,
+    geminiErrors: [],
   };
 
   if (!state.data.accounts.some((account) => account.role === "관리자")) {
@@ -60,4 +61,40 @@ function loadData() {
   });
 
   persist();
+}
+
+async function loadUsageEvents() {
+  const savedUsageEvents = parseStorage(USAGE_EVENT_STORAGE_KEY);
+  const localUsageEvents = Array.isArray(savedUsageEvents)
+    ? savedUsageEvents
+    : Array.isArray(savedUsageEvents?.usageEvents)
+      ? savedUsageEvents.usageEvents
+      : [];
+  const mergeEvents = (serverEvents) => {
+    const seen = new Set();
+    state.data.usageEvents = [...serverEvents, ...localUsageEvents].filter((event) => {
+      const key = event?.id || `${event?.recordedAt}|${event?.eventName}|${JSON.stringify(event?.payload || {})}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
+  try {
+    const response = await fetch("/api/usage-events?limit=20000", { cache: "no-store" });
+    const data = await response.json();
+    mergeEvents(response.ok && Array.isArray(data?.events) ? data.events : []);
+  } catch {
+    state.data.usageEvents = localUsageEvents;
+  }
+}
+
+async function loadGeminiErrors() {
+  try {
+    const response = await fetch("/api/gemini-errors", { cache: "no-store" });
+    const data = await response.json();
+    state.data.geminiErrors = response.ok && Array.isArray(data?.errors) ? data.errors : [];
+  } catch {
+    state.data.geminiErrors = [];
+  }
 }

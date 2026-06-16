@@ -97,7 +97,7 @@ function buildCounselorAccounts(headers, rows) {
   const totalRows = rows.length;
 
   rows.forEach((row, rowIdx) => {
-    const email = String(row[emailIndex] || "").trim();
+    const email = normalizeEmail(row[emailIndex]);
     const phoneRaw = String(row[phoneIndex] || "").trim();
     const name = String(row[nameIndex] || "").trim();
     const branchName = String(row[branchIndex] || "").trim();
@@ -111,12 +111,12 @@ function buildCounselorAccounts(headers, rows) {
     }
 
     const loginId = email;
-    if (seenLogins.has(loginId.toLowerCase())) {
+    if (seenLogins.has(loginId)) {
       excludedCount += 1;
       return;
     }
 
-    seenLogins.add(loginId.toLowerCase());
+    seenLogins.add(loginId);
 
     const password = phoneDigits.slice(-4);
     if (!password) {

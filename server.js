@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const express = require('express');
 
 require('dotenv').config();
@@ -6,6 +7,9 @@ require('dotenv').config();
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 const publicDir = __dirname;
+const logDir = path.join(__dirname, 'logs');
+const geminiErrorLogPath = path.join(logDir, 'gemini-errors.jsonl');
+const usageEventLogPath = path.join(logDir, 'usage-events.jsonl');
 const allowedRequestFields = [
   'contents',
   'system_instruction',
@@ -18,6 +22,94 @@ const allowedRequestFields = [
 function redactSecret(value, secret) {
   return JSON.parse(JSON.stringify(value).replaceAll(secret, '[redacted]'));
 }
+
+function geminiErrorMessage(value, secret) {
+  return String(value || 'Gemini request failed.').replaceAll(secret, '[redacted]').slice(0, 2000);
+}
+
+function recordGeminiError(model, status, message) {
+  const entry = {
+    model: model || 'unknown',
+    status: Number(status) || 0,
+    message: String(message || 'Gemini request failed.'),
+    occurredAt: new Date().toISOString()
+  };
+  console.error('[gemini-error]', entry);
+  fs.promises.appendFile(geminiErrorLogPath, `${JSON.stringify(entry)}\n`, 'utf8')
+    .catch((error) => console.error('[gemini-error-log-failed]', error));
+}
+
+function sanitizeUsagePayload(payload) {
+  const allowedFields = [
+    'reportType',
+    'durationMs',
+    'status',
+    'errorName',
+    'errorType',
+    'errorMessage',
+    'reason',
+    'counselorId',
+    'counselorName',
+    'branch',
+    'tokenUsage',
+    'retryCount'
+  ];
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return {};
+  return Object.fromEntries(
+    allowedFields
+      .filter((field) => payload[field] !== undefined)
+      .map((field) => [field, payload[field]])
+  );
+}
+
+function normalizeUsageEvent(event) {
+  if (!event || typeof event !== 'object' || Array.isArray(event)) return null;
+  const eventName = typeof event.eventName === 'string' ? event.eventName.trim() : '';
+  if (!eventName) return null;
+  const recordedAt = event.recordedAt && !Number.isNaN(new Date(event.recordedAt).getTime())
+    ? new Date(event.recordedAt).toISOString()
+    : new Date().toISOString();
+  return {
+    id: typeof event.id === 'string' ? event.id.slice(0, 120) : '',
+    eventName: eventName.slice(0, 120),
+    payload: sanitizeUsagePayload(event.payload),
+    recordedAt
+  };
+}
+
+async function appendUsageEvents(events) {
+  const normalized = events.map(normalizeUsageEvent).filter(Boolean);
+  if (!normalized.length) return [];
+  await fs.promises.appendFile(
+    usageEventLogPath,
+    normalized.map((event) => JSON.stringify(event)).join('\n') + '\n',
+    'utf8'
+  );
+  return normalized;
+}
+
+async function readUsageEvents(limit = 5000) {
+  const text = await fs.promises.readFile(usageEventLogPath, 'utf8').catch((error) => {
+    if (error.code === 'ENOENT') return '';
+    throw error;
+  });
+  if (!text.trim()) return [];
+  const seen = new Set();
+  return text.trim().split(/\r?\n/).flatMap((line) => {
+    try {
+      const event = normalizeUsageEvent(JSON.parse(line));
+      if (!event) return [];
+      const dedupeKey = event.id || `${event.recordedAt}|${event.eventName}|${JSON.stringify(event.payload)}`;
+      if (seen.has(dedupeKey)) return [];
+      seen.add(dedupeKey);
+      return [event];
+    } catch {
+      return [];
+    }
+  }).slice(-limit);
+}
+
+fs.mkdirSync(logDir, { recursive: true });
 
 app.use(express.json({ limit: '35mb' }));
 
@@ -49,11 +141,57 @@ app.post('/api/gemini', async (req, res) => {
     const data = await upstream.json().catch(() => ({
       error: { message: `Gemini returned an invalid JSON response (${upstream.status}).` }
     }));
+    const safeData = upstream.ok ? data : redactSecret(data, geminiApiKey);
 
-    return res.status(upstream.status).json(upstream.ok ? data : redactSecret(data, geminiApiKey));
+    if (!upstream.ok) {
+      recordGeminiError(model, upstream.status, geminiErrorMessage(safeData?.error?.message, geminiApiKey));
+    }
+    return res.status(upstream.status).json(safeData);
   } catch (error) {
-    const safeMessage = String(error?.message || 'Gemini request failed.').replaceAll(geminiApiKey, '[redacted]');
+    const safeMessage = geminiErrorMessage(error?.message, geminiApiKey);
+    recordGeminiError(model, 502, safeMessage);
     return res.status(502).json({ error: { message: safeMessage } });
+  }
+});
+
+app.post('/api/usage-events', async (req, res) => {
+  try {
+    const events = Array.isArray(req.body?.events) ? req.body.events : [req.body?.event || req.body];
+    const saved = await appendUsageEvents(events);
+    return res.json({ saved: saved.length });
+  } catch (error) {
+    return res.status(500).json({ error: { message: 'Usage events could not be saved.' } });
+  }
+});
+
+app.get('/api/usage-events', async (req, res) => {
+  try {
+    const limit = Math.min(Math.max(Number(req.query.limit) || 5000, 1), 20000);
+    const events = await readUsageEvents(limit);
+    return res.json({ events });
+  } catch (error) {
+    return res.status(500).json({ error: { message: 'Usage events could not be read.' } });
+  }
+});
+
+app.get('/api/gemini-errors', async (_req, res) => {
+  try {
+    const text = await fs.promises.readFile(geminiErrorLogPath, 'utf8').catch((error) => {
+      if (error.code === 'ENOENT') return '';
+      throw error;
+    });
+    const errors = text.trim()
+      ? text.trim().split(/\r?\n/).slice(-200).flatMap((line) => {
+        try {
+          return [JSON.parse(line)];
+        } catch {
+          return [];
+        }
+      }).reverse()
+      : [];
+    return res.json({ errors });
+  } catch (error) {
+    return res.status(500).json({ error: { message: 'Gemini error logs could not be read.' } });
   }
 });
 

@@ -14,6 +14,7 @@ function shellTemplate() {
           <button class="${state.active === "statistics" ? "active" : ""}" data-action="set-section" data-id="statistics"><span>리포트 통계</span><span>›</span></button>
         </nav>
         <div class="logout"><button class="btn secondary full" data-action="logout">로그아웃</button></div>
+        <div class="sidebar-copyright">© 2026 JM Career. All Rights Reserved.</div>
       </aside>
       <main class="main">${adminSection()}${statisticsSection()}</main>
     </div>`;
@@ -32,7 +33,11 @@ function render() {
 const actions = {
   login: () => login() && render(),
   logout: () => { logout(); render(); },
-  "set-section": (id) => { state.active = id; render(); },
+  "set-section": async (id) => { state.active = id; if (id === "statistics") { await loadUsageEvents(); await loadGeminiErrors(); } render(); },
+  "reload-gemini-errors": async () => { await loadGeminiErrors(); render(); },
+  "set-statistics-period": (id) => { setStatisticsPeriod(id); render(); },
+  "apply-statistics-period": () => { applyCustomStatisticsPeriod(); render(); },
+  "download-statistics": (id) => downloadStatisticsExcel(id),
   "save-account": () => saveAccount() && render(),
   "reset-account": () => resetAccountForm(),
   "fill-account": (id) => fillAccountForm(id),
@@ -57,3 +62,4 @@ document.addEventListener("change", (event) => {
 
 loadData();
 render();
+Promise.all([loadUsageEvents(), loadGeminiErrors()]).then(render);

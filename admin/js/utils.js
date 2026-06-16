@@ -6,6 +6,18 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function normalizeEmail(value = "") {
+  return String(value).trim().toLowerCase();
+}
+
+function maskCounselorName(value = "") {
+  const characters = [...String(value).trim()];
+  if (!characters.length) return "";
+  if (characters.length === 1) return "*";
+  if (characters.length === 2) return `${characters[0]}*`;
+  return `${characters[0]}${"*".repeat(characters.length - 2)}${characters[characters.length - 1]}`;
+}
+
 function escapeHtml(value = "") {
   const entities = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
   return String(value).replace(/[&<>"']/g, (char) => entities[char]);

@@ -76,7 +76,7 @@ SUCCESS_CASE_SEARCH_ASSIST.ui={
   prepStrategy:'추천 준비 전략',
   topCases:'대표 성공사례 TOP',
 
-  topCasesDesc:'아래 사례는 공공기관 사례집 검색 결과 중 유사도가 높은 사례입니다.',
+  topCasesDesc:'본 리포트는 AI가 분석한 데이터이며 내용에 대한 최종 평가는 전문가에게 있습니다.',
   patternAnalysis:'공통 전환 패턴 분석',
   patternDesc:'검색 결과의 전환유형, 현재직업, 준비방법을 기준으로 요약했습니다.',
   prepAnalysis:'준비 내용 및 기간 분석',

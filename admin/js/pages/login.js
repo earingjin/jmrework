@@ -5,6 +5,7 @@ function loginTemplate() {
         <div class="login-brand">RE:WORK CENTER</div>
         <h1>관리자 페이지</h1>
         <p>상담사 계정을 생성·삭제하고 서비스 사용 현황과 리포트 생성 통계를 관리합니다.</p>
+        <div class="login-copyright">© 2026 JM Career. All Rights Reserved.</div>
       </section>
       <section class="login-panel">
         <div class="login-box">

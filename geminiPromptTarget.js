@@ -87,7 +87,7 @@ Gemini는 변하는 상담 문장과 분석 내용만 작성하고, 표 구조/�
 - targetJobCompetencyAnalysis.fitSummary는 직업흥미, 성격검사, 생활사 맥락, 학력, 전공, 자격증, 상담사 메모를 희망직무 기준으로 교차 분석하여 2~3문장씩 2~3문단으로 작성하세요.
 - targetJobCompetencyAnalysis.matchingPoints는 입력된 직업흥미 점수, 학력, 자격증, 상담사 메모와 직접 연결되는 근거를 정확히 3개 작성하세요.
 - targetJobCompetencyAnalysis.gaps는 희망직무 수행 시 보완할 점을 정확히 3개 작성하되, 부정적 판정이 아니라 훈련 가능한 과제로 표현하세요.
-- integratedAnalysis는 희망직무와 검사 결과의 일치점, 불일치 지점, 보완 가능성을 2~3문장씩 2문단으로 작성하세요. 
+- integratedAnalysis는 내담자가 강점을 잘 발휘할 수 있는 직무 및 환경, 어려움을 느낄 수 있는 직무 및 환경, 내담자가 진로탐색 시 무엇을 확인해야 하는지 중심으로 작성하세요. 2~3문장씩 2문단으로 작성하세요. 
 - 점수는 꼭 필요한 경우 integratedAnalysis 전체에서 1~2회만 사용하세요. 점수 나열은 피하고, 코드명과 점수를 직접 언급하는 대신 "R과 S에서 높은 점수를 보이는 유형으로, 산업 현장의 현실적이고 안정적인 환경에서 강점을 발휘할 수 있습니다"처럼 작성하세요.
 - SWOT는 strengths, weaknesses, opportunities, threats 각각 정확히 2개씩 작성하세요. 각 항목은 1문장으로 제한하세요.
 - recommendedJobs는 정확히 5개 작성하세요. 희망직무, 직업흥미 점수, 입력된 성격검사와 생활사, 학력, 전공, 자격증을 함께 고려하세요.

@@ -12,6 +12,7 @@
       try {
         const generated = await generateGeminiJobAnalysis(p, target);
         finishGeneratedReport('jobAnalysis', p, generated.title, generated.html);
+        return { tokenUsage: generated.tokenUsage };
       } catch (err) {
         throw err;
       }

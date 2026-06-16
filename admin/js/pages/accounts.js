@@ -23,12 +23,13 @@ function adminSection() {
 function accountRow(account) {
   const status = account.status === "inactive" ? "inactive" : "active";
   const branchDisplay = account.branch || "미지정";
-  const search = `${branchDisplay} ${account.name} ${account.loginId} ${status === "active" ? "활성" : "비활성"}`.toLowerCase();
+  const displayName = maskCounselorName(account.name);
+  const search = `${branchDisplay} ${displayName} ${account.loginId} ${status === "active" ? "활성" : "비활성"}`.toLowerCase();
   const passwordSnippet = String(account.password || "").slice(-4);
   return `
     <tr data-account-row data-search="${escapeHtml(search)}" data-status="${status}">
       <td>${escapeHtml(branchDisplay)}</td>
-      <td><div class="admin-account-name"><span class="status-dot ${status}"></span><strong>${escapeHtml(account.name)}</strong></div><span class="small">${escapeHtml(account.loginId)} / PW: ****${escapeHtml(passwordSnippet)}</span></td>
+      <td><div class="admin-account-name"><span class="status-dot ${status}"></span><strong>${escapeHtml(displayName)}</strong></div><span class="small">${escapeHtml(account.loginId)} / PW: ****${escapeHtml(passwordSnippet)}</span></td>
       <td>${status === "active" ? '<span class="pill green">활성</span>' : '<span class="pill gray">비활성</span>'}</td>
       <td>${escapeHtml(account.createdAt || "-")}</td>
       <td>${escapeHtml(formatDateTime(account.lastLoginAt))}</td>
@@ -39,6 +40,31 @@ function accountRow(account) {
         <button class="btn danger" data-action="delete-account" data-id="${account.id}">삭제</button>
       </td>
     </tr>`;
+}
+
+function mergeImportedCounselorAccounts(importedAccounts, existingCounselors) {
+  const existingByLoginId = new Map(
+    existingCounselors
+      .map((account) => [normalizeEmail(account.loginId), account])
+      .filter(([loginId]) => loginId)
+  );
+
+  return importedAccounts.map((importedAccount) => {
+    const loginId = normalizeEmail(importedAccount.loginId);
+    const existingAccount = existingByLoginId.get(loginId);
+    if (!existingAccount) return { ...importedAccount, loginId };
+
+    return {
+      ...importedAccount,
+      id: existingAccount.id,
+      loginId,
+      password: existingAccount.password,
+      status: existingAccount.status,
+      createdAt: existingAccount.createdAt || importedAccount.createdAt,
+      lastLoginAt: existingAccount.lastLoginAt || null,
+      loginCount: Number(existingAccount.loginCount) || 0,
+    };
+  });
 }
 
 function accountForm() {
@@ -123,14 +149,17 @@ function filterAccounts() {
 
 function saveAccount() {
   const id = val("accountId");
-  const name = val("accName");
-  const loginId = val("accLoginId");
+  const nameInput = document.getElementById("accName");
+  const enteredName = val("accName");
+  const originalName = nameInput?.dataset.originalName || "";
+  const name = originalName && enteredName === maskCounselorName(originalName) ? originalName : enteredName;
+  const loginId = normalizeEmail(val("accLoginId"));
   const password = val("accPw");
   const branch = val("accBranch") || "미지정";
 
   if (!name || !loginId || !password) return toast("이름, 아이디, 비밀번호를 모두 입력해주세요."), false;
   if (password.length < 4) return toast("비밀번호는 4자 이상이어야 합니다."), false;
-  if (state.data.accounts.some((account) => account.loginId === loginId && account.id !== id)) {
+  if (state.data.accounts.some((account) => normalizeEmail(account.loginId) === loginId && account.id !== id)) {
     toast("이미 사용 중인 아이디입니다.");
     return false;
   }
@@ -152,7 +181,9 @@ function fillAccountForm(id) {
   const account = state.data.accounts.find((item) => item.id === id && item.role === "상담사");
   if (!account) return;
   document.getElementById("accountId").value = account.id;
-  document.getElementById("accName").value = account.name;
+  const nameInput = document.getElementById("accName");
+  nameInput.value = maskCounselorName(account.name);
+  nameInput.dataset.originalName = account.name;
   document.getElementById("accLoginId").value = account.loginId;
   document.getElementById("accPw").value = account.password;
   document.getElementById("accBranch").value = account.branch || "";
@@ -164,6 +195,8 @@ function resetAccountForm() {
     const element = document.getElementById(id);
     if (element) element.value = "";
   });
+  const nameInput = document.getElementById("accName");
+  if (nameInput) delete nameInput.dataset.originalName;
 }
 
 function toggleAccountStatus(id) {
@@ -177,7 +210,7 @@ function toggleAccountStatus(id) {
 
 function deleteAccount(id) {
   const account = state.data.accounts.find((item) => item.id === id && item.role === "상담사");
-  if (!account || !confirm(`${account.name} 계정을 삭제할까요?`)) return false;
+  if (!account || !confirm(`${maskCounselorName(account.name)} 계정을 삭제할까요?`)) return false;
   state.data.accounts = state.data.accounts.filter((item) => item.id !== id);
   persist();
   toast("계정이 삭제되었습니다.");
@@ -195,7 +228,9 @@ async function importAccounts() {
   try {
     const result = await parseCounselorAccountsFromFile(file);
     const adminAccounts = state.data.accounts.filter((account) => account.role === "관리자");
-    state.data.accounts = [...adminAccounts, ...result.accounts];
+    const existingCounselors = state.data.accounts.filter((account) => account.role === "상담사");
+    const counselorAccounts = mergeImportedCounselorAccounts(result.accounts, existingCounselors);
+    state.data.accounts = [...adminAccounts, ...counselorAccounts];
     persist();
     state.importResult = result;
     state.active = "admin";

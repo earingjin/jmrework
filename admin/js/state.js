@@ -5,6 +5,12 @@ const state = {
   data: {
     accounts: [],
     reports: [],
+    geminiErrors: [],
   },
   importResult: null,
+  statisticsPeriod: {
+    preset: "all",
+    start: "",
+    end: "",
+  },
 };
