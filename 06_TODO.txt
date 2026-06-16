@@ -1,0 +1,53 @@
+#질문사항은 여기에 올려주시면 됩니다.
+1. Gemini 추가 호출 방지를 위한 503 오류 개선 방안
+2. API키 숨기는 방법
+3. 실제 배포를 생각했을 때 index.html을 어떻게 분리하면 좋을까요?
+
+
+#001
+지금은 사용하지 않는 파일 : MockData.js, GeminiPrompt.js, landingData.js
+
+-> GeminiPrompt.js는 GeminiPromptTarget.js(희망직무 있음 리포트 프롬프트)와 GeminiPromptNoTarget.js(희망직무 없음 리포트 프롬프트)로 분리했습니다.
+-> landingData.js는 landingpage.js로 파일명 변경했습니다.
+
+
+#002 
+<토큰 사용량> Gemini_flash_2.5 기준
+
+1. 희망직무 없음 리포트(503오류로 인한 재호출 시도 1회)
+   promptTokenCount: 2,098
+   candidatesTokenCount: 1,938
+   thoughtsTokenCount: 3,506
+   totalTokenCount: 7,542
+
+2. 희망직무 있음 리포트
+   Prompt     : 1,873
+   Response   : 2,783
+   Thinking   : 3,596
+   Total      : 8,252
+
+3. 성공사례 리포트
+   Prompt     : 2,208
+   Response   : 2,358
+   Thinking   : 2,886
+   Total      : 7,452
+
+-> 환산하면 약 20~30원 내외입니다. (구글 API Studio의 지출란 -> 월 지출 한도에서 비용 모니터링)
+확인해보니, 토큰사용 제한을 두는 것보다는 503으로 인한 추가 호출을 막는 게 절감 효과가 클 것 같습니다.
+
+
+#003 
+Gemini API키를 숨겨야 할 것 같습니다. 현재 데모 단계에서는 리포트 출력 시 HTML파일에 키를 직접 입력하고 있으나, 실제 서비스 배포 시에는 화면에 안 보이게 숨기려고 합니다.
+키를 화면에서 숨겼을 때 F12에서도 안 보이게 하려면 어떻게 하면 될까요?
+
+
+#004 
+index.html에 몰린 기능을 어떤 기준으로 파일 분리하면 좋을까요?
+현재는 직업선호도검사 리포트 출력과 성공사례 출력이 모두 html에 있습니다.
+
+
+
+
+
+
+

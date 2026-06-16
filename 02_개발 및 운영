@@ -1,0 +1,46 @@
+1. 개발 및 운영
+
+구독결제
+1) CODEX : 30,000원 결제(1회)
+2) 구글 API : 16,000원 결제(2026.06.08)
+3) 총 사용금액 : 46,000원 사용
+
+2. token 테스트
+
+<Gemini_flash_2.5 기준>
+
+1) 희망직무 없음 리포트(503오류로 인한 재호출 시도 1회)
+   promptTokenCount: 2,098
+   candidatesTokenCount: 1,938
+   thoughtsTokenCount: 3,506
+   totalTokenCount: 7,542
+
+2) 희망직무 있음 리포트
+   Prompt     : 1,873
+   Response   : 2,783
+   Thinking   : 3,596
+   Total      : 8,252
+
+3) 성공사례 리포트
+   Prompt     : 2,208
+   Response   : 2,358
+   Thinking   : 2,886
+   Total      : 7,452
+
+-> 환산하면 약 20~30원 내외입니다. (구글 API Studio의 지출란 -> 월 지출 한도에서 비용 모니터링)
+
+4) 토큰확인 방법
+   지출확인은 사용후 증액되는 비용을 직접 확인하는 방식
+   https://github.com/earingjin/jmrework/blob/main/GoogleAPI%20%EC%9B%94%20%EC%A7%80%EC%B6%9C%20%ED%95%9C%EB%8F%84.JPG
+
+3. 사이트 주소 : 
+
+1) 주요기능 : 총 3건 리포트 기능
+   직무분석 리포트(Type a) : 희망직무 있음
+   직무분석 리포트(Type B) : 희망직무 없음
+   중장년 우수사례 : 엑셀자료 학습
+
+2) 사용한 생성형 AI : 제미나이 2.5
+3) 제미나이 선정이유 : 구글 API 비용등 저렴함, 구글시트 등 구글 워크스페이스와 연동되어 활용가능
+                      이용결과를 구글시트에 저장하기 수월(데이터 처리 용이)
+
