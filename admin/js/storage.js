@@ -18,16 +18,29 @@ function persist() {
   }));
 }
 
-function loadData() {
+async function loadData() {
   const savedAccounts = parseStorage(ACCOUNT_STORAGE_KEY);
   const legacySaved = parseStorage(LEGACY_STORAGE_KEY);
   const savedUsageEvents = parseStorage(USAGE_EVENT_STORAGE_KEY);
 
-  const accounts = Array.isArray(savedAccounts?.accounts)
+  let accounts = Array.isArray(savedAccounts?.accounts)
     ? savedAccounts.accounts
     : Array.isArray(legacySaved?.accounts)
       ? legacySaved.accounts
       : [];
+
+  // try to load accounts from server DB first
+  try {
+    const response = await fetch("/api/accounts", { cache: "no-store" });
+    if (response.ok) {
+      const data = await response.json();
+      if (Array.isArray(data?.accounts)) {
+        accounts = data.accounts;
+      }
+    }
+  } catch (err) {
+    // fallback to localStorage if server fetch fails
+  }
 
   const usageEvents = Array.isArray(savedUsageEvents)
     ? savedUsageEvents

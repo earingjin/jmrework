@@ -42,7 +42,7 @@ const actions = {
   "reset-account": () => resetAccountForm(),
   "fill-account": (id) => fillAccountForm(id),
   "toggle-account": (id) => toggleAccountStatus(id) && render(),
-  "delete-account": (id) => deleteAccount(id) && render(),
+  "delete-account": async (id) => { const ok = await deleteAccount(id); if (ok) render(); },
   "import-accounts": async () => { await importAccounts(); render(); },
 };
 
@@ -60,6 +60,7 @@ document.addEventListener("change", (event) => {
   if (event.target.matches("[data-filter-accounts]")) filterAccounts();
 });
 
-loadData();
-render();
-Promise.all([loadUsageEvents(), loadGeminiErrors()]).then(render);
+loadData().then(() => {
+  render();
+  Promise.all([loadUsageEvents(), loadGeminiErrors()]).then(render);
+});

@@ -240,23 +240,19 @@ async function toggleAccountStatus(id) {
   }
 }
 
-function deleteAccount(id) {
+async function deleteAccount(id) {
   const account = state.data.accounts.find((item) => item.id === id && item.role === '상담사');
   if (!account || !confirm(`${maskCounselorName(account.name)} 계정을 삭제할까요?`)) return false;
   try {
-    // call server
-    fetch(`/api/accounts/${encodeURIComponent(id)}`, { method: 'DELETE' }).then(async (resp) => {
-      const data = await resp.json().catch(() => null);
-      if (!resp.ok) {
-        toast((data && data.error && data.error.message) ? data.error.message : '서버에 계정 삭제 중 오류가 발생했습니다.');
-        return false;
-      }
-      state.data.accounts = state.data.accounts.filter((item) => item.id !== id);
-      persist();
-      toast('계정이 삭제되었습니다.');
-      render();
-      return true;
-    }).catch((err) => { console.error('deleteAccount server error', err); toast('서버에 계정 삭제 중 오류가 발생했습니다.'); return false; });
+    const resp = await fetch(`/api/accounts/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    const data = await resp.json().catch(() => null);
+    if (!resp.ok) {
+      toast((data && data.error && data.error.message) ? data.error.message : '서버에 계정 삭제 중 오류가 발생했습니다.');
+      return false;
+    }
+    state.data.accounts = state.data.accounts.filter((item) => item.id !== id);
+    persist();
+    toast('계정이 삭제되었습니다.');
     return true;
   } catch (err) {
     console.error('deleteAccount server error', err);
