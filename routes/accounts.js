@@ -55,4 +55,61 @@ router.post('/accounts/import', async (req, res) => {
   }
 });
 
+// POST /api/accounts - create account (admin)
+router.post('/accounts', async (req, res) => {
+  if (!db || !db.enabled) return res.status(503).json({ error: { message: 'DB not configured' } });
+  try {
+    const body = req.body || {};
+    const account = await db.createAccount(body);
+    return res.status(201).json({ account });
+  } catch (err) {
+    console.error('[accounts-create-error]', err);
+    return res.status(500).json({ error: { message: String(err.message || err) } });
+  }
+});
+
+// PUT /api/accounts/:id - update account
+router.put('/accounts/:id', async (req, res) => {
+  if (!db || !db.enabled) return res.status(503).json({ error: { message: 'DB not configured' } });
+  try {
+    const id = req.params.id;
+    const body = req.body || {};
+    const updated = await db.updateAccount(id, body);
+    if (!updated) return res.status(404).json({ error: { message: 'Account not found or nothing to update' } });
+    return res.json({ account: updated });
+  } catch (err) {
+    console.error('[accounts-update-error]', err);
+    return res.status(500).json({ error: { message: String(err.message || err) } });
+  }
+});
+
+// DELETE /api/accounts/:id - delete account
+router.delete('/accounts/:id', async (req, res) => {
+  if (!db || !db.enabled) return res.status(503).json({ error: { message: 'DB not configured' } });
+  try {
+    const id = req.params.id;
+    await db.deleteAccount(id);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('[accounts-delete-error]', err);
+    return res.status(500).json({ error: { message: String(err.message || err) } });
+  }
+});
+
+// POST /api/accounts/:id/password - change password
+router.post('/accounts/:id/password', async (req, res) => {
+  if (!db || !db.enabled) return res.status(503).json({ error: { message: 'DB not configured' } });
+  try {
+    const id = req.params.id;
+    const { password } = req.body || {};
+    if (!password) return res.status(400).json({ error: { message: 'password required' } });
+    const ok = await db.updateAccountPassword(id, password);
+    if (!ok) return res.status(404).json({ error: { message: 'Account not found' } });
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('[accounts-password-error]', err);
+    return res.status(500).json({ error: { message: String(err.message || err) } });
+  }
+});
+
 module.exports = router;

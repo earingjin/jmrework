@@ -165,16 +165,38 @@ function saveAccount() {
   }
 
   const old = id ? state.data.accounts.find((account) => account.id === id) : null;
-  const item = {
-    id: id || uid(), name, loginId, password, role: "상담사", branch,
-    createdAt: old?.createdAt || today(), status: old?.status || "active",
-    lastLoginAt: old?.lastLoginAt || null, loginCount: Number(old?.loginCount) || 0,
-  };
-  if (old) state.data.accounts[state.data.accounts.findIndex((account) => account.id === id)] = item;
-  else state.data.accounts.push(item);
-  persist();
-  toast("상담사 계정이 저장되었습니다.");
-  return true;
+  const payload = { loginId, name, branch, password, role: '상담사' };
+  try {
+    if (!old) {
+      // create
+      const resp = await fetch('/api/accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await resp.json().catch(() => null);
+      if (!resp.ok) { toast((data && data.error && data.error.message) ? data.error.message : '서버에 계정 생성 중 오류가 발생했습니다.'); return false; }
+      const account = data.account;
+      // update local state and persist as backup
+      state.data.accounts.push({ id: account.id, loginId: account.login_id || account.loginId, name: account.name, role: account.role, branch: account.branch, createdAt: account.created_at || today(), status: account.status || 'active', lastLoginAt: account.last_login_at || null, loginCount: account.login_count || 0, password });
+      persist();
+      toast('상담사 계정이 생성되었습니다.');
+      return true;
+    } else {
+      // update
+      const resp = await fetch(`/api/accounts/${encodeURIComponent(id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await resp.json().catch(() => null);
+      if (!resp.ok) { toast((data && data.error && data.error.message) ? data.error.message : '서버에 계정 업데이트 중 오류가 발생했습니다.'); return false; }
+      const account = data.account;
+      const idx = state.data.accounts.findIndex((a) => a.id === id);
+      if (idx >= 0) {
+        state.data.accounts[idx] = { ...(state.data.accounts[idx] || {}), id: account.id, loginId: account.login_id || account.loginId, name: account.name, role: account.role, branch: account.branch, status: account.status || 'active', lastLoginAt: account.last_login_at || null };
+      }
+      persist();
+      toast('상담사 계정이 업데이트되었습니다.');
+      return true;
+    }
+  } catch (err) {
+    console.error('saveAccount server error', err);
+    toast('서버에 계정 저장 중 오류가 발생했습니다.');
+    return false;
+  }
 }
 
 function fillAccountForm(id) {
@@ -200,21 +222,47 @@ function resetAccountForm() {
 }
 
 function toggleAccountStatus(id) {
-  const account = state.data.accounts.find((item) => item.id === id && item.role === "상담사");
+  const account = state.data.accounts.find((item) => item.id === id && item.role === '상담사');
   if (!account) return false;
-  account.status = account.status === "inactive" ? "active" : "inactive";
-  persist();
-  toast(account.status === "active" ? "계정을 활성화했습니다." : "계정을 비활성화했습니다.");
-  return true;
+  const newStatus = account.status === 'inactive' ? 'active' : 'inactive';
+  try {
+    const resp = await fetch(`/api/accounts/${encodeURIComponent(id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
+    const data = await resp.json().catch(() => null);
+    if (!resp.ok) { toast((data && data.error && data.error.message) ? data.error.message : '서버에 상태 변경 중 오류가 발생했습니다.'); return false; }
+    account.status = newStatus;
+    persist();
+    toast(account.status === 'active' ? '계정을 활성화했습니다.' : '계정을 비활성화했습니다.');
+    return true;
+  } catch (err) {
+    console.error('toggleAccountStatus server error', err);
+    toast('서버에 상태 변경 중 오류가 발생했습니다.');
+    return false;
+  }
 }
 
 function deleteAccount(id) {
-  const account = state.data.accounts.find((item) => item.id === id && item.role === "상담사");
+  const account = state.data.accounts.find((item) => item.id === id && item.role === '상담사');
   if (!account || !confirm(`${maskCounselorName(account.name)} 계정을 삭제할까요?`)) return false;
-  state.data.accounts = state.data.accounts.filter((item) => item.id !== id);
-  persist();
-  toast("계정이 삭제되었습니다.");
-  return true;
+  try {
+    // call server
+    fetch(`/api/accounts/${encodeURIComponent(id)}`, { method: 'DELETE' }).then(async (resp) => {
+      const data = await resp.json().catch(() => null);
+      if (!resp.ok) {
+        toast((data && data.error && data.error.message) ? data.error.message : '서버에 계정 삭제 중 오류가 발생했습니다.');
+        return false;
+      }
+      state.data.accounts = state.data.accounts.filter((item) => item.id !== id);
+      persist();
+      toast('계정이 삭제되었습니다.');
+      render();
+      return true;
+    }).catch((err) => { console.error('deleteAccount server error', err); toast('서버에 계정 삭제 중 오류가 발생했습니다.'); return false; });
+    return true;
+  } catch (err) {
+    console.error('deleteAccount server error', err);
+    toast('서버에 계정 삭제 중 오류가 발생했습니다.');
+    return false;
+  }
 }
 
 async function importAccounts() {
