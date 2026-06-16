@@ -19,6 +19,13 @@ const allowedRequestFields = [
   'toolConfig'
 ];
 
+// optional DB integration
+const db = require('./lib/db');
+const usageEventsDb = require('./routes/usageEvents');
+
+// initialize DB pool if configured
+try { db.init(); } catch (e) { console.error('DB init failed', e); }
+
 function redactSecret(value, secret) {
   return JSON.parse(JSON.stringify(value).replaceAll(secret, '[redacted]'));
 }
@@ -80,11 +87,22 @@ function normalizeUsageEvent(event) {
 async function appendUsageEvents(events) {
   const normalized = events.map(normalizeUsageEvent).filter(Boolean);
   if (!normalized.length) return [];
+  // always append to local file (existing behaviour)
   await fs.promises.appendFile(
     usageEventLogPath,
     normalized.map((event) => JSON.stringify(event)).join('\n') + '\n',
     'utf8'
   );
+
+  // if DB configured, try to persist there as well; failures should not affect file writes
+  if (db && db.enabled) {
+    try {
+      await usageEventsDb.saveToDb(normalized.map((e) => ({ ...e, raw_source: 'server' })));
+    } catch (err) {
+      console.error('[db-usage-events-save-failed]', err);
+    }
+  }
+
   return normalized;
 }
 
@@ -200,6 +218,6 @@ app.get(['/server.js', '/package.json', '/package-lock.json', '/.env.example'], 
 });
 app.use(express.static(publicDir, { dotfiles: 'deny' }));
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`RE:WORK server listening on http://localhost:${port}`);
 });
