@@ -147,7 +147,7 @@ function filterAccounts() {
   if (empty) empty.style.display = visible ? "none" : "block";
 }
 
-function saveAccount() {
+async function saveAccount() {
   const id = val("accountId");
   const nameInput = document.getElementById("accName");
   const enteredName = val("accName");
@@ -221,7 +221,7 @@ function resetAccountForm() {
   if (nameInput) delete nameInput.dataset.originalName;
 }
 
-function toggleAccountStatus(id) {
+async function toggleAccountStatus(id) {
   const account = state.data.accounts.find((item) => item.id === id && item.role === '상담사');
   if (!account) return false;
   const newStatus = account.status === 'inactive' ? 'active' : 'inactive';
