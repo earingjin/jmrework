@@ -108,25 +108,54 @@ async function appendUsageEvents(events) {
   return normalized;
 }
 
-async function readUsageEvents(limit = 5000) {
+function usageEventDedupeKey(event) {
+  return event.id || `${event.recordedAt}|${event.eventName}|${JSON.stringify(event.payload)}`;
+}
+
+function mergeUsageEvents(sources, limit) {
+  const seen = new Set();
+  return sources
+    .flat()
+    .map(normalizeUsageEvent)
+    .filter(Boolean)
+    .filter((event) => {
+      const key = usageEventDedupeKey(event);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime())
+    .slice(-limit);
+}
+
+async function readUsageEventsFromFile() {
   const text = await fs.promises.readFile(usageEventLogPath, 'utf8').catch((error) => {
     if (error.code === 'ENOENT') return '';
     throw error;
   });
   if (!text.trim()) return [];
-  const seen = new Set();
   return text.trim().split(/\r?\n/).flatMap((line) => {
     try {
       const event = normalizeUsageEvent(JSON.parse(line));
       if (!event) return [];
-      const dedupeKey = event.id || `${event.recordedAt}|${event.eventName}|${JSON.stringify(event.payload)}`;
-      if (seen.has(dedupeKey)) return [];
-      seen.add(dedupeKey);
       return [event];
     } catch {
       return [];
     }
-  }).slice(-limit);
+  });
+}
+
+async function readUsageEvents(limit = 5000) {
+  const fileEvents = await readUsageEventsFromFile();
+  if (!db || !db.enabled) return mergeUsageEvents([fileEvents], limit);
+
+  try {
+    const dbEvents = await usageEventsDb.getFromDb(limit);
+    return mergeUsageEvents([fileEvents, dbEvents], limit);
+  } catch (error) {
+    console.error('[db-usage-events-read-failed]', error);
+    return mergeUsageEvents([fileEvents], limit);
+  }
 }
 
 fs.mkdirSync(logDir, { recursive: true });
