@@ -61,7 +61,15 @@ function sanitizeUsagePayload(payload) {
     'tokenUsage',
     'retryCount',
     'finishReason',
-    'parseStage'
+    'parseStage',
+    'modelName',
+    'parseSuccess',
+    'autoRepairAttempted',
+    'autoRepairSuccess',
+    'jsonRepairAttempted',
+    'jsonRepairSuccess',
+    'regenerateAttempted',
+    'regenerateSuccess'
   ];
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return {};
   return Object.fromEntries(
