@@ -4,12 +4,26 @@ const express = require('express');
 
 require('dotenv').config();
 
+const {
+  adminRequired,
+  authRequired,
+  createRateLimit,
+  requireJwtSecret
+} = require('./lib/auth');
+
+requireJwtSecret();
+
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 const publicDir = __dirname;
 const logDir = path.join(__dirname, 'logs');
 const geminiErrorLogPath = path.join(logDir, 'gemini-errors.jsonl');
 const usageEventLogPath = path.join(logDir, 'usage-events.jsonl');
+const geminiRateLimit = createRateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: 'Too many AI requests. Please try again later.'
+});
 const allowedRequestFields = [
   'contents',
   'system_instruction',
@@ -178,7 +192,7 @@ try {
   console.error('Could not mount accounts routes', e);
 }
 
-app.post('/api/gemini', async (req, res) => {
+app.post('/api/gemini', authRequired, geminiRateLimit, async (req, res) => {
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const model = typeof req.body?.model === 'string' ? req.body.model.trim() : '';
 
@@ -219,7 +233,7 @@ app.post('/api/gemini', async (req, res) => {
   }
 });
 
-app.post('/api/usage-events', async (req, res) => {
+app.post('/api/usage-events', authRequired, async (req, res) => {
   try {
     const events = Array.isArray(req.body?.events) ? req.body.events : [req.body?.event || req.body];
     const saved = await appendUsageEvents(events);
@@ -229,7 +243,7 @@ app.post('/api/usage-events', async (req, res) => {
   }
 });
 
-app.get('/api/usage-events', async (req, res) => {
+app.get('/api/usage-events', authRequired, adminRequired, async (req, res) => {
   try {
     const limit = Math.min(Math.max(Number(req.query.limit) || 5000, 1), 20000);
     const events = await readUsageEvents(limit);
@@ -239,7 +253,7 @@ app.get('/api/usage-events', async (req, res) => {
   }
 });
 
-app.get('/api/gemini-errors', async (_req, res) => {
+app.get('/api/gemini-errors', authRequired, adminRequired, async (_req, res) => {
   try {
     const text = await fs.promises.readFile(geminiErrorLogPath, 'utf8').catch((error) => {
       if (error.code === 'ENOENT') return '';

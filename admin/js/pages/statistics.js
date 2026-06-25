@@ -1,8 +1,13 @@
 const EVENTS = {
   REPORT_GENERATION_STARTED: "report_generation_started",
+  REPORT_GENERATION_COMPLETED: "report_generation_completed",
   REPORT_GENERATION_SUCCEEDED: "report_generation_succeeded",
   REPORT_GENERATION_FAILED: "report_generation_failed",
 };
+const REPORT_FINAL_STATUS = Object.freeze({ SUCCESS: "SUCCESS", RECOVERED_SUCCESS: "RECOVERED_SUCCESS", FAILED: "FAILED" });
+const REPORT_ERROR_TYPE = Object.freeze({ NONE: "NONE", JSON_PARSE_ERROR: "JSON_PARSE_ERROR", JSON_REPAIR_FAILED: "JSON_REPAIR_FAILED", AI_EMPTY_RESPONSE: "AI_EMPTY_RESPONSE", AI_RESPONSE_TRUNCATED: "AI_RESPONSE_TRUNCATED", RATE_LIMIT: "RATE_LIMIT", SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE", NETWORK_ERROR: "NETWORK_ERROR", AUTH_ERROR: "AUTH_ERROR", VALIDATION_ERROR: "VALIDATION_ERROR", TIMEOUT: "TIMEOUT", UNKNOWN_ERROR: "UNKNOWN_ERROR" });
+const REPORT_RECOVERY_TYPE = Object.freeze({ NONE: "NONE", CODE_REPAIR: "CODE_REPAIR", AI_JSON_REPAIR: "AI_JSON_REPAIR", FULL_REGENERATION: "FULL_REGENERATION", DEFAULT_VALUE: "DEFAULT_VALUE", RETRY_SUCCESS: "RETRY_SUCCESS" });
+const REPORT_RETRY_REASON = Object.freeze({ NONE: "NONE", JSON_PARSE_ERROR: "JSON_PARSE_ERROR", JSON_REPAIR_FAILED: "JSON_REPAIR_FAILED", AI_EMPTY_RESPONSE: "AI_EMPTY_RESPONSE", AI_RESPONSE_TRUNCATED: "AI_RESPONSE_TRUNCATED", RATE_LIMIT: "RATE_LIMIT", SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE", NETWORK_ERROR: "NETWORK_ERROR", TIMEOUT: "TIMEOUT" });
 
 function reportTypeName(type) {
   return {
@@ -95,6 +100,17 @@ function reportErrorLabel(event) {
   return status ? `HTTP ${status} / ${type}` : type;
 }
 
+function isReportCompletionEvent(event) {
+  return [EVENTS.REPORT_GENERATION_COMPLETED, EVENTS.REPORT_GENERATION_SUCCEEDED, EVENTS.REPORT_GENERATION_FAILED].includes(event?.eventName);
+}
+
+function reportFinalStatus(event) {
+  if (event?.payload?.finalStatus) return event.payload.finalStatus;
+  if (event?.eventName === EVENTS.REPORT_GENERATION_SUCCEEDED) return REPORT_FINAL_STATUS.SUCCESS;
+  if (event?.eventName === EVENTS.REPORT_GENERATION_FAILED) return REPORT_FINAL_STATUS.FAILED;
+  return "";
+}
+
 function accountBranch(counselorId) {
   const account = state.data.accounts.find((item) => item.id === counselorId);
   return account?.branch || "미지정";
@@ -104,15 +120,20 @@ function usageGroupData(events, keyFn, labelFn = (key) => key) {
   const groups = new Map();
   events.forEach((event) => {
     const key = keyFn(event) || "미지정";
-    if (!groups.has(key)) groups.set(key, { attempts: 0, success: 0, failed: 0, tokens: 0, duration: 0, completed: 0, retries: 0 });
+    if (!groups.has(key)) groups.set(key, { attempts: 0, success: 0, recovered: 0, failed: 0, tokens: 0, duration: 0, completed: 0, retries: 0 });
     const row = groups.get(key);
+    const finalStatus = reportFinalStatus(event);
     if (event?.eventName === EVENTS.REPORT_GENERATION_STARTED) row.attempts += 1;
-    if (event?.eventName === EVENTS.REPORT_GENERATION_SUCCEEDED) {
+    if (finalStatus === REPORT_FINAL_STATUS.SUCCESS) {
       row.success += 1;
       row.tokens += tokenTotal(event);
     }
-    if (event?.eventName === EVENTS.REPORT_GENERATION_FAILED) row.failed += 1;
-    if ([EVENTS.REPORT_GENERATION_SUCCEEDED, EVENTS.REPORT_GENERATION_FAILED].includes(event?.eventName)) {
+    if (finalStatus === REPORT_FINAL_STATUS.RECOVERED_SUCCESS) {
+      row.recovered += 1;
+      row.tokens += tokenTotal(event);
+    }
+    if (finalStatus === REPORT_FINAL_STATUS.FAILED) row.failed += 1;
+    if (isReportCompletionEvent(event)) {
       row.duration += Number(event?.payload?.durationMs) || 0;
       row.retries += Number(event?.payload?.retryCount) || 0;
       row.completed += 1;
@@ -121,18 +142,18 @@ function usageGroupData(events, keyFn, labelFn = (key) => key) {
 
   return [...groups.entries()]
     .sort((a, b) => b[1].attempts - a[1].attempts)
-    .map(([key, row]) => ({ ...row, label: labelFn(key), successRate: row.attempts ? row.success / row.attempts : 0, averageDurationMs: row.completed ? row.duration / row.completed : 0 }));
+    .map(([key, row]) => ({ ...row, label: labelFn(key), successRate: row.attempts ? (row.success + row.recovered) / row.attempts : 0, averageDurationMs: row.completed ? row.duration / row.completed : 0 }));
 }
 
 function usageGroupRows(data) {
   return data
-    .map((row) => `<tr><td><strong>${escapeHtml(row.label)}</strong></td><td>${numberText(row.attempts)}</td><td>${numberText(row.success)}</td><td>${numberText(row.failed)}</td><td>${percentText(row.success, row.attempts)}</td><td>${numberText(row.tokens)}</td><td>${durationText(row.averageDurationMs)}</td><td>${numberText(row.retries)}</td></tr>`)
+    .map((row) => `<tr><td><strong>${escapeHtml(row.label)}</strong></td><td>${numberText(row.attempts)}</td><td>${numberText(row.success)}</td><td>${numberText(row.recovered)}</td><td>${numberText(row.failed)}</td><td>${percentText(row.success + row.recovered, row.attempts)}</td><td>${numberText(row.tokens)}</td><td>${durationText(row.averageDurationMs)}</td><td>${numberText(row.retries)}</td></tr>`)
     .join("");
 }
 
 function usageTable(title, description, rows, firstColumn, exportKind) {
   const contents = rows
-    ? `<div class="table-wrap"><table><thead><tr><th>${firstColumn}</th><th>전체 생성</th><th>성공</th><th>실패</th><th>성공률</th><th>토큰</th><th>평균 시간</th><th>재시도</th></tr></thead><tbody>${rows}</tbody></table></div>`
+    ? `<div class="table-wrap"><table><thead><tr><th>${firstColumn}</th><th>전체 생성</th><th>최종 성공</th><th>복구 성공</th><th>최종 실패</th><th>성공률</th><th>토큰</th><th>평균 시간</th><th>재시도</th></tr></thead><tbody>${rows}</tbody></table></div>`
     : '<div class="empty">집계할 리포트 생성 이벤트가 없습니다.</div>';
   return `<div class="panel"><div class="panel-head"><div><h3>${title}</h3><span class="small">${description}</span></div><button class="btn secondary" data-action="download-statistics" data-id="${exportKind}">엑셀 다운로드</button></div><div class="panel-body">${contents}</div></div>`;
 }
@@ -163,37 +184,43 @@ function statisticsData() {
   const range = statisticsDateRange();
   const events = (Array.isArray(state.data.usageEvents) ? state.data.usageEvents : []).filter((event) => inStatisticsPeriod(event?.recordedAt, range));
   const geminiErrors = (Array.isArray(state.data.geminiErrors) ? state.data.geminiErrors : []).filter((error) => inStatisticsPeriod(error?.occurredAt, range));
+  const completed = events.filter(isReportCompletionEvent);
   const started = events.filter((event) => event?.eventName === EVENTS.REPORT_GENERATION_STARTED);
-  const succeeded = events.filter((event) => event?.eventName === EVENTS.REPORT_GENERATION_SUCCEEDED);
-  const failed = events.filter((event) => event?.eventName === EVENTS.REPORT_GENERATION_FAILED);
-  const completed = [...succeeded, ...failed];
-  const totalTokens = succeeded.reduce((sum, event) => sum + tokenTotal(event), 0);
+  const succeeded = completed.filter((event) => reportFinalStatus(event) === REPORT_FINAL_STATUS.SUCCESS);
+  const recovered = completed.filter((event) => reportFinalStatus(event) === REPORT_FINAL_STATUS.RECOVERED_SUCCESS);
+  const failed = completed.filter((event) => reportFinalStatus(event) === REPORT_FINAL_STATUS.FAILED);
+  const totalTokens = [...succeeded, ...recovered].reduce((sum, event) => sum + tokenTotal(event), 0);
   const totalRetries = completed.reduce((sum, event) => sum + (Number(event?.payload?.retryCount) || 0), 0);
   const averageDuration = completed.length
     ? completed.reduce((sum, event) => sum + (Number(event?.payload?.durationMs) || 0), 0) / completed.length
     : 0;
 
-  const errorCounts = failed.reduce((result, event) => {
-    const key = reportErrorLabel(event);
-    result[key] = (result[key] || 0) + 1;
+  const errorStats = completed.filter((event) => event?.payload?.errorType && event.payload.errorType !== REPORT_ERROR_TYPE.NONE).reduce((result, event) => {
+    const key = event.payload.errorType || REPORT_ERROR_TYPE.UNKNOWN_ERROR;
+    if (!result[key]) result[key] = { count: 0, recovered: 0, failed: 0 };
+    result[key].count += 1;
+    if (reportFinalStatus(event) === REPORT_FINAL_STATUS.RECOVERED_SUCCESS) result[key].recovered += 1;
+    if (reportFinalStatus(event) === REPORT_FINAL_STATUS.FAILED) result[key].failed += 1;
     return result;
   }, {});
+  const errorCounts = Object.fromEntries(Object.entries(errorStats).map(([key, value]) => [key, value.count]));
   const typeData = usageGroupData(events, (event) => event?.payload?.reportType || "unknown", reportTypeName);
   const counselorData = usageGroupData(events, (event) => event?.payload?.counselorId || event?.payload?.counselorName || "미지정", (key) => {
     const account = state.data.accounts.find((item) => item.id === key);
     return maskCounselorName(account?.name || key);
   });
   const branchData = usageGroupData(events, (event) => event?.payload?.branch || accountBranch(event?.payload?.counselorId));
-  return { range, events, geminiErrors, started, succeeded, failed, completed, totalTokens, totalRetries, averageDuration, errorCounts, typeData, counselorData, branchData };
+  return { range, events, geminiErrors, started, succeeded, recovered, failed, completed, totalTokens, totalRetries, averageDuration, errorCounts, errorStats, typeData, counselorData, branchData };
 }
 
 function usageExportRows(data, label) {
   return data.map((row) => ({
     [label]: row.label,
     "전체 생성": row.attempts,
-    "성공": row.success,
-    "실패": row.failed,
-    "성공률(%)": Number((row.successRate * 100).toFixed(1)),
+    "최종 성공": row.success,
+    "복구 성공": row.recovered,
+    "최종 실패": row.failed,
+    "성공률(%)": Number(((row.success + row.recovered) / (row.attempts || 1) * 100).toFixed(1)),
     "토큰 사용량": row.tokens,
     "평균 생성 시간(ms)": Math.round(row.averageDurationMs),
     "재시도 횟수": row.retries,
@@ -206,19 +233,22 @@ function statisticsExportSheets() {
     "조회 시작일": data.range.start || "전체",
     "조회 종료일": data.range.end || "전체",
     "전체 생성 건수": data.started.length,
-    "성공 건수": data.succeeded.length,
-    "실패 건수": data.failed.length,
-    "성공률(%)": Number((data.started.length ? data.succeeded.length / data.started.length * 100 : 0).toFixed(1)),
+    "최종 성공 건수": data.succeeded.length,
+    "복구 성공 건수": data.recovered.length,
+    "최종 실패 건수": data.failed.length,
+    "성공률(%)": Number((data.started.length ? (data.succeeded.length + data.recovered.length) / data.started.length * 100 : 0).toFixed(1)),
     "총 토큰 사용량": data.totalTokens,
     "평균 생성 시간(ms)": Math.round(data.averageDuration),
     "재시도 횟수": data.totalRetries,
     "오류 유형 수": Object.keys(data.errorCounts).length,
     "Gemini 서버 오류": data.geminiErrors.length,
   }];
-  const errors = Object.entries(data.errorCounts).sort((a, b) => b[1] - a[1]).map(([type, count]) => ({
+  const errors = Object.entries(data.errorStats).sort((a, b) => b[1].count - a[1].count).map(([type, stat]) => ({
     "오류 유형": type,
-    "발생 건수": count,
-    "실패 내 비중(%)": Number((data.failed.length ? count / data.failed.length * 100 : 0).toFixed(1)),
+    "발생 건수": stat.count,
+    "복구 성공 건수": stat.recovered,
+    "최종 실패 건수": stat.failed,
+    "복구율(%)": Number((stat.count ? stat.recovered / stat.count * 100 : 0).toFixed(1)),
   }));
   const gemini = data.geminiErrors.map((error) => ({
     "발생 시각": error?.occurredAt || "",
@@ -266,13 +296,13 @@ function downloadStatisticsExcel(kind = "all") {
 
 function statisticsSection() {
   const data = statisticsData();
-  const { range, geminiErrors, started, succeeded, failed, totalTokens, totalRetries, averageDuration, errorCounts } = data;
-  const errorRows = Object.entries(errorCounts)
-    .sort((a, b) => b[1] - a[1])
-    .map(([type, count]) => `<tr><td>${escapeHtml(type)}</td><td><strong>${numberText(count)}건</strong></td><td>${percentText(count, failed.length)}</td></tr>`)
+  const { range, geminiErrors, started, succeeded, recovered, failed, totalTokens, totalRetries, averageDuration, errorCounts, errorStats } = data;
+  const errorRows = Object.entries(errorStats)
+    .sort((a, b) => b[1].count - a[1].count)
+    .map(([type, stat]) => `<tr><td>${escapeHtml(type)}</td><td><strong>${numberText(stat.count)}건</strong></td><td>${numberText(stat.recovered)}건</td><td>${numberText(stat.failed)}건</td><td>${percentText(stat.recovered, stat.count)}</td></tr>`)
     .join("");
   const errorContents = errorRows
-    ? `<div class="table-wrap"><table><thead><tr><th>오류 유형</th><th>발생 건수</th><th>실패 내 비중</th></tr></thead><tbody>${errorRows}</tbody></table></div>`
+    ? `<div class="table-wrap"><table><thead><tr><th>오류 유형</th><th>발생 건수</th><th>복구 성공 건수</th><th>최종 실패 건수</th><th>복구율</th></tr></thead><tbody>${errorRows}</tbody></table></div>`
     : '<div class="empty">기록된 리포트 생성 오류가 없습니다.</div>';
 
   const typeRows = usageGroupRows(data.typeData);
@@ -286,8 +316,9 @@ function statisticsSection() {
       <div class="actions statistics-download-actions"><button class="btn" data-action="download-statistics" data-id="all">전체 통계 엑셀 다운로드</button><button class="btn secondary" data-action="download-statistics" data-id="summary">운영 요약 다운로드</button></div>
       <div class="cards">
         <div class="metric"><span>전체 생성 건수</span><strong>${numberText(started.length)}</strong></div>
-        <div class="metric"><span>성공 / 실패 건수</span><strong>${numberText(succeeded.length)} / ${numberText(failed.length)}</strong></div>
-        <div class="metric"><span>성공률</span><strong>${percentText(succeeded.length, started.length)}</strong></div>
+        <div class="metric"><span>최종 성공 / 복구 성공</span><strong>${numberText(succeeded.length)} / ${numberText(recovered.length)}</strong></div>
+        <div class="metric"><span>최종 실패</span><strong>${numberText(failed.length)}</strong></div>
+        <div class="metric"><span>성공률</span><strong>${percentText(succeeded.length + recovered.length, started.length)}</strong></div>
         <div class="metric"><span>총 토큰 사용량</span><strong>${numberText(totalTokens)}</strong></div>
         <div class="metric"><span>평균 생성 시간</span><strong>${durationText(averageDuration)}</strong></div>
         <div class="metric"><span>재시도 횟수</span><strong>${numberText(totalRetries)}</strong></div>

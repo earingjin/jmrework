@@ -31,7 +31,7 @@ function render() {
 }
 
 const actions = {
-  login: () => login() && render(),
+  login: async () => { if (await login()) { await loadData(); render(); } },
   logout: () => { logout(); render(); },
   "set-section": async (id) => { state.active = id; if (id === "statistics") { await loadUsageEvents(); await loadGeminiErrors(); } render(); },
   "reload-gemini-errors": async () => { await loadGeminiErrors(); render(); },

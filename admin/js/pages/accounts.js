@@ -157,30 +157,31 @@ async function saveAccount() {
   const password = val("accPw");
   const branch = val("accBranch") || "미지정";
 
-  if (!name || !loginId || !password) return toast("이름, 아이디, 비밀번호를 모두 입력해주세요."), false;
-  if (password.length < 4) return toast("비밀번호는 4자 이상이어야 합니다."), false;
+  if (!name || !loginId || (!id && !password)) return toast("이름, 아이디, 비밀번호를 모두 입력해주세요."), false;
+  if (password && password.length < 4) return toast("비밀번호는 4자 이상이어야 합니다."), false;
   if (state.data.accounts.some((account) => normalizeEmail(account.loginId) === loginId && account.id !== id)) {
     toast("이미 사용 중인 아이디입니다.");
     return false;
   }
 
   const old = id ? state.data.accounts.find((account) => account.id === id) : null;
-  const payload = { loginId, name, branch, password, role: '상담사' };
+  const payload = { loginId, name, branch, role: '상담사' };
+  if (password) payload.password = password;
   try {
     if (!old) {
       // create
-      const resp = await fetch('/api/accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const resp = await authFetch('/api/accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await resp.json().catch(() => null);
       if (!resp.ok) { toast((data && data.error && data.error.message) ? data.error.message : '서버에 계정 생성 중 오류가 발생했습니다.'); return false; }
       const account = data.account;
       // update local state and persist as backup
-      state.data.accounts.push({ id: account.id, loginId: account.login_id || account.loginId, name: account.name, role: account.role, branch: account.branch, createdAt: account.created_at || today(), status: account.status || 'active', lastLoginAt: account.last_login_at || null, loginCount: account.login_count || 0, password });
+      state.data.accounts.push({ id: account.id, loginId: account.login_id || account.loginId, name: account.name, role: account.role, branch: account.branch, createdAt: account.created_at || today(), status: account.status || 'active', lastLoginAt: account.last_login_at || null, loginCount: account.login_count || 0 });
       persist();
       toast('상담사 계정이 생성되었습니다.');
       return true;
     } else {
       // update
-      const resp = await fetch(`/api/accounts/${encodeURIComponent(id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const resp = await authFetch(`/api/accounts/${encodeURIComponent(id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await resp.json().catch(() => null);
       if (!resp.ok) { toast((data && data.error && data.error.message) ? data.error.message : '서버에 계정 업데이트 중 오류가 발생했습니다.'); return false; }
       const account = data.account;
@@ -207,7 +208,7 @@ function fillAccountForm(id) {
   nameInput.value = maskCounselorName(account.name);
   nameInput.dataset.originalName = account.name;
   document.getElementById("accLoginId").value = account.loginId;
-  document.getElementById("accPw").value = account.password;
+  document.getElementById("accPw").value = "";
   document.getElementById("accBranch").value = account.branch || "";
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -226,7 +227,7 @@ async function toggleAccountStatus(id) {
   if (!account) return false;
   const newStatus = account.status === 'inactive' ? 'active' : 'inactive';
   try {
-    const resp = await fetch(`/api/accounts/${encodeURIComponent(id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
+    const resp = await authFetch(`/api/accounts/${encodeURIComponent(id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
     const data = await resp.json().catch(() => null);
     if (!resp.ok) { toast((data && data.error && data.error.message) ? data.error.message : '서버에 상태 변경 중 오류가 발생했습니다.'); return false; }
     account.status = newStatus;
@@ -244,7 +245,7 @@ async function deleteAccount(id) {
   const account = state.data.accounts.find((item) => item.id === id && item.role === '상담사');
   if (!account || !confirm(`${maskCounselorName(account.name)} 계정을 삭제할까요?`)) return false;
   try {
-    const resp = await fetch(`/api/accounts/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    const resp = await authFetch(`/api/accounts/${encodeURIComponent(id)}`, { method: 'DELETE' });
     const data = await resp.json().catch(() => null);
     if (!resp.ok) {
       toast((data && data.error && data.error.message) ? data.error.message : '서버에 계정 삭제 중 오류가 발생했습니다.');
@@ -275,14 +276,14 @@ async function importAccounts() {
     // send parsed accounts to server for replace import
     const counselorAccounts = result.accounts || [];
     try {
-      const resp = await fetch('/api/accounts/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accounts: counselorAccounts }) });
+      const resp = await authFetch('/api/accounts/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accounts: counselorAccounts }) });
       const data = await resp.json().catch(() => null);
       if (!resp.ok) {
         toast((data && data.error && data.error.message) ? data.error.message : '서버에 계정 저장 중 오류가 발생했습니다.');
         return false;
       }
-      // keep localStorage as backup but update UI from the new list
-      state.data.accounts = [...adminAccounts, ...counselorAccounts];
+      // keep localStorage as a UI cache without plaintext passwords.
+      state.data.accounts = Array.isArray(data.accounts) ? data.accounts : [...adminAccounts, ...counselorAccounts.map(({ password, ...account }) => account)];
       persist();
       state.importResult = { totalRows: result.totalRows, importedCount: data.importedCount || result.importedCount, excludedCount: data.excludedCount || result.excludedCount };
       state.active = "admin";

@@ -3,6 +3,9 @@
     renderForm(p, common) {
       return common + `<div class="field"><label>주요 경력 *</label><textarea id="seniorCareer">${escapeHtml(p.career||'')}</textarea></div><div class="field"><label>보유 역량/자격증 선택</label><textarea id="seniorAssets" placeholder="예: 영업관리, 조직관리, 엑셀, 지게차운전기능사"></textarea></div><div class="field"><label>희망 방향 선택</label><select id="seniorDirection"><option>재취업</option><option>전직</option><option>창업</option><option>강의/컨설팅</option><option>사회공헌</option></select></div><div class="field"><label>특별 요청사항 선택</label><textarea id="seniorReq" placeholder="예: 현실적인 재취업 직무 중심으로"></textarea></div><button class="btn full" onclick="generateReport('senior')">리포트 생성</button>`;
     },
+    validate() {
+      return val('seniorCareer') ? true : '주요 경력을 입력해주세요.';
+    },
     async generate(p) {
       const career = val('seniorCareer');
       if (!career) {

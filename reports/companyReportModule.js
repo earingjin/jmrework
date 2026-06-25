@@ -3,6 +3,9 @@
     renderForm(p, common) {
       return common + `<div class="field"><label>기업명 *</label><input id="companyName" placeholder="예: 삼성전자, 현대자동차"></div><div class="field"><label>홈페이지/채용 URL 선택</label><input id="companyUrl" placeholder="https://..."></div><div class="field"><label>지원 희망 직무 선택</label><input id="companyJob" value="${escapeHtml(p.target||'')}" placeholder="예: HR, 영업관리, 마케팅"></div><div class="field"><label>채용공고/직무기술서 내용 선택</label><textarea id="companyJD" placeholder="채용공고나 직무기술서 내용을 붙여넣으세요."></textarea></div><div class="field"><label>특별 요청사항 선택</label><textarea id="companyReq" placeholder="예: 면접 준비 중심으로 분석, 중장년 전직 관점으로 분석"></textarea></div><button class="btn full" onclick="generateReport('company')">분석 시작</button>`;
     },
+    validate() {
+      return val('companyName') ? true : '기업명을 입력해주세요.';
+    },
     async generate(p) {
       const company = val('companyName');
       if (!company) {
