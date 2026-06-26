@@ -65,6 +65,7 @@ const state = {
   active: 'dashboard',
   activeModule: defaultReportType(),
   selectedParticipantId: null,
+  selectedNoticeId: null,
   currentReport: null,
   editMode: false,
   reportMenuOpen: true,
@@ -138,7 +139,8 @@ function storageDefaults() {
       memo: '',
       createdAt: today()
     }],
-    accounts: []
+    accounts: [],
+    notices: []
   };
 }
 
@@ -156,10 +158,30 @@ function ensureDefaults() {
     state.data.participants = storageDefaults().participants;
   }
   if (!Array.isArray(state.data.accounts)) state.data.accounts = [];
+  if (!Array.isArray(state.data.notices)) state.data.notices = [];
 }
 
 function persist() {
   clearDeprecatedAccountStorage();
+}
+
+async function loadNotices() {
+  if (!localStorage.getItem(AUTH_TOKEN_KEY)) {
+    state.data.notices = [];
+    return [];
+  }
+  try {
+    const response = await fetch('/api/notices', {
+      headers: authHeaders(),
+      cache: 'no-store'
+    });
+    const data = await response.json().catch(() => null);
+    state.data.notices = response.ok && Array.isArray(data?.notices) ? data.notices : [];
+  } catch (err) {
+    console.warn('공지사항 불러오기 실패', err);
+    state.data.notices = [];
+  }
+  return state.data.notices;
 }
 
 function resetSensitiveSessionData() {
@@ -167,6 +189,7 @@ function resetSensitiveSessionData() {
   state.selectedParticipantId = state.data.participants[0]?.id || 'session_client';
   state.currentReport = null;
   state.editMode = false;
+  state.selectedNoticeId = null;
   state.successResults = [];
   state.successQuery = '';
   state.successInsight = '';
@@ -207,6 +230,7 @@ function pageSnapshot() {
     active: state.active,
     activeModule: state.activeModule,
     selectedParticipantId: state.selectedParticipantId,
+    selectedNoticeId: state.selectedNoticeId,
     currentReport: state.currentReport ? { ...state.currentReport } : null,
     editMode: state.editMode,
     reportMenuOpen: state.reportMenuOpen
@@ -228,6 +252,7 @@ function restoreSnapshot(snap) {
   state.active = snap.active;
   state.activeModule = snap.activeModule;
   state.selectedParticipantId = snap.selectedParticipantId;
+  state.selectedNoticeId = snap.selectedNoticeId || null;
   state.currentReport = snap.currentReport;
   state.editMode = snap.editMode;
   state.reportMenuOpen = snap.reportMenuOpen;

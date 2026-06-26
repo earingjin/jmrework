@@ -12,7 +12,7 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; font-family: "Noto Sans KR", Arial, sans-serif; background: var(--bg); color: var(--text); }
-button, input, select { font: inherit; }
+button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 
 .btn { border: 1px solid transparent; background: var(--navy); color: #fff; padding: 10px 15px; min-height: 42px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
@@ -25,7 +25,10 @@ button { cursor: pointer; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .field { display: grid; gap: 7px; margin-bottom: 14px; }
 .field label { font-size: 13px; font-weight: 800; color: #344054; }
-.field input, .field select, .admin-tools input, .admin-tools select { width: 100%; border: 1px solid #cbd5e1; background: #fff; color: var(--text); padding: 10px 11px; min-height: 42px; border-radius: 4px; }
+.field input, .field select, .field textarea, .admin-tools input, .admin-tools select { width: 100%; border: 1px solid #cbd5e1; background: #fff; color: var(--text); padding: 10px 11px; min-height: 42px; border-radius: 4px; }
+.field textarea { min-height: 220px; resize: vertical; line-height: 1.6; }
+.field.checkbox-field { display: flex; align-items: center; gap: 8px; }
+.field.checkbox-field input { width: auto; min-height: auto; }
 
 .login-screen { min-height: 100vh; display: grid; grid-template-columns: 1.1fr .9fr; background: linear-gradient(120deg, #f7faff, #eef5fb); }
 .login-hero { padding: 76px 7vw; display: flex; flex-direction: column; justify-content: center; border-right: 1px solid var(--line); }

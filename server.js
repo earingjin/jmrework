@@ -196,6 +196,14 @@ try {
   console.error('Could not mount accounts routes', e);
 }
 
+// mount notices routes (provides /api/notices for counselors and admin notice management)
+try {
+  const noticesRoutes = require('./routes/notices');
+  app.use('/api', noticesRoutes);
+} catch (e) {
+  console.error('Could not mount notices routes', e);
+}
+
 app.post('/api/gemini', authRequired, geminiRateLimit, async (req, res) => {
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const model = typeof req.body?.model === 'string' ? req.body.model.trim() : '';

@@ -62,6 +62,7 @@ async function login() {
         state.view = 'app';
         state.active = APP_ROLE === 'admin' ? 'admin' : 'dashboard';
         if (!state.selectedParticipantId && state.data.participants[0]) state.selectedParticipantId = state.data.participants[0].id;
+        await loadNotices();
         persist();
         render();
         return;

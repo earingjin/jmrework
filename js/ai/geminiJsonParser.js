@@ -212,6 +212,100 @@
     return out;
   }
 
+  function repairGeminiJsonValueSeparators(text) {
+    const source = String(text || '');
+    let out = '';
+    let inString = false;
+    let escaped = false;
+    let lastSignificant = '';
+    const startsValue = (ch) => ch === '"' || ch === '{' || ch === '[' || ch === '-' || /\d|t|f|n/.test(ch || '');
+    const endsValue = (ch) => ch === '"' || ch === '}' || ch === ']' || /\d|e|l/.test(ch || '');
+    const previousSignificant = () => {
+      for (let i = out.length - 1; i >= 0; i -= 1) {
+        if (!/\s/.test(out[i])) return out[i];
+      }
+      return '';
+    };
+    const nextSignificant = (index) => {
+      for (let i = index; i < source.length; i += 1) {
+        if (!/\s/.test(source[i])) return source[i];
+      }
+      return '';
+    };
+
+    for (let i = 0; i < source.length; i += 1) {
+      const ch = source[i];
+      out += ch;
+
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (ch === '\\') escaped = true;
+        else if (ch === '"') inString = false;
+        continue;
+      }
+
+      if (ch === '"') {
+        inString = true;
+        lastSignificant = ch;
+        continue;
+      }
+
+      if (!/\s/.test(ch)) lastSignificant = ch;
+      if (!endsValue(ch)) continue;
+
+      const next = nextSignificant(i + 1);
+      const prev = previousSignificant();
+      if (startsValue(next) && next !== '}' && next !== ']' && prev !== ':' && lastSignificant !== ':') {
+        out += ',';
+        lastSignificant = ',';
+      }
+    }
+    return out;
+  }
+
+  function repairGeminiJsonClosers(text) {
+    const source = String(text || '').trim();
+    const stack = [];
+    let out = '';
+    let inString = false;
+    let escaped = false;
+
+    for (let i = 0; i < source.length; i += 1) {
+      const ch = source[i];
+      out += ch;
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (ch === '\\') escaped = true;
+        else if (ch === '"') inString = false;
+        continue;
+      }
+      if (ch === '"') {
+        inString = true;
+        continue;
+      }
+      if (ch === '{') stack.push('}');
+      else if (ch === '[') stack.push(']');
+      else if ((ch === '}' || ch === ']') && stack.at(-1) === ch) stack.pop();
+    }
+
+    if (inString || /[,:\\[]$/.test(source)) return source;
+    while (stack.length) out += stack.pop();
+    return out;
+  }
+
+  function repairGeminiJsonLiterals(text) {
+    return String(text || '')
+      .replace(/([{,]\s*)([A-Za-z_$][\w$-]*)(\s*:)/g, '$1"$2"$3')
+      .replace(/\bTrue\b/g, 'true')
+      .replace(/\bFalse\b/g, 'false')
+      .replace(/\bNone\b/g, 'null');
+  }
+
+  function repairGeminiJsonStructure(text) {
+    const withSeparators = repairGeminiJsonValueSeparators(repairGeminiJsonCommas(text));
+    return repairGeminiJsonClosers(repairGeminiJsonLiterals(withSeparators));
+  }
+
   function parseGeminiJsonDetailed(text) {
     const raw = String(text || '');
     let lastError = new SyntaxError('Gemini 응답에 JSON 객체 또는 배열이 없습니다.');
@@ -233,6 +327,8 @@
     [...attempts].forEach(({ stage, value }) => add(`${stage}_sanitized`, sanitizeGeminiJson(value)));
     [...attempts].forEach(({ stage, value }) => add(`${stage}_commas_repaired`, repairGeminiJsonCommas(value)));
     [...attempts].forEach(({ stage, value }) => add(`${stage}_commas_repaired_sanitized`, sanitizeGeminiJson(repairGeminiJsonCommas(value))));
+    [...attempts].forEach(({ stage, value }) => add(`${stage}_structure_repaired`, repairGeminiJsonStructure(value)));
+    [...attempts].forEach(({ stage, value }) => add(`${stage}_structure_repaired_sanitized`, sanitizeGeminiJson(repairGeminiJsonStructure(value))));
     add('raw', raw, false);
     for (const { stage, value, autoRepairAttempted } of attempts) {
       try {
@@ -272,6 +368,10 @@
     assertGeminiCandidateCompleted,
     sanitizeGeminiJson,
     repairGeminiJsonCommas,
+    repairGeminiJsonValueSeparators,
+    repairGeminiJsonClosers,
+    repairGeminiJsonLiterals,
+    repairGeminiJsonStructure,
     parseGeminiJsonDetailed,
     parseGeminiJson
   });

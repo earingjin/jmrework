@@ -109,6 +109,7 @@ async function loadData() {
   state.data = {
     accounts: stripAccountSecrets(accounts),
     reports: [],
+    notices: [],
     usageEvents,
     geminiErrors: [],
   };
@@ -119,6 +120,7 @@ async function loadData() {
   });
 
   persist();
+  await loadNotices();
 }
 
 async function loadUsageEvents() {
@@ -154,5 +156,15 @@ async function loadGeminiErrors() {
     state.data.geminiErrors = response.ok && Array.isArray(data?.errors) ? data.errors : [];
   } catch {
     state.data.geminiErrors = [];
+  }
+}
+
+async function loadNotices() {
+  try {
+    const response = await authFetch("/api/notices/admin", { cache: "no-store" });
+    const data = await response.json().catch(() => null);
+    state.data.notices = response.ok && Array.isArray(data?.notices) ? data.notices : [];
+  } catch {
+    state.data.notices = [];
   }
 }

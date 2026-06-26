@@ -11,6 +11,20 @@ function reportSubNavHtml() {
   return reportMenuDefinitions().map(subNavButton).join('');
 }
 
+function sidebarNoticeTitle(title = '') {
+  const text = String(title || '').trim();
+  return text.length > 28 ? `${text.slice(0, 28)}...` : text;
+}
+
+function noticeSidebarHtml() {
+  const notices = sortedPublishedNotices().slice(0, 5);
+  if (!notices.length) return '';
+  const rows = notices
+    .map((notice) => `<button class="${state.active === 'notices' && state.selectedNoticeId === notice.id ? 'active' : ''}" onclick="openNotice('${escapeHtml(notice.id)}')"><span>${notice.pinned ? '[고정] ' : ''}${escapeHtml(sidebarNoticeTitle(notice.title))}</span><small>${escapeHtml(noticeDateText(notice.updatedAt || notice.createdAt))}</small></button>`)
+    .join('');
+  return `<section class="sidebar-notice-box"><div class="sidebar-notice-head"><span>공지사항</span><button type="button" onclick="reloadNotices()">새로고침</button></div><div class="sidebar-notice-list">${rows}</div></section>`;
+}
+
 function setReportModule(module) {
   if (state.active !== 'modules' || state.activeModule !== module) pushHistory();
   state.active = 'modules';
@@ -37,6 +51,7 @@ function goDashboard() {
 
 function activeMainSectionHtml() {
   if (state.active === 'modules') return modulesSection();
+  if (state.active === 'notices') return noticesSection();
   if (state.active === 'account') return accountSection();
   if (state.active === 'admin') return adminStatsSection();
   return dashboardSection();
@@ -45,7 +60,7 @@ function activeMainSectionHtml() {
 function shellTemplate() {
   const sideBrand = `<div class="side-brand" role="button" tabindex="0" aria-label="메인 대시보드로 이동" onclick="goDashboard()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();goDashboard()}"><img src="${BRAND_LOGO}" alt="${BRAND_NAME}" class="sidebar-logo"><div class="title">${BRAND_NAME}</div><div class="sub">${BRAND_SUBTITLE}</div><div class="role-badge">${escapeHtml(state.user.name)} · ${escapeHtml(state.user.role)}</div></div>`;
   const reportMenuStyle = state.reportMenuOpen ? '' : 'style="display:none"';
-  return `<div class="shell"><aside class="sidebar no-print">${sideBrand}<nav class="nav"><button class="${state.active === 'modules' ? 'active' : ''}" onclick="toggleReportMenu()"><span>리포트 생성</span><span>${state.reportMenuOpen ? '⌃' : '⌄'}</span></button><div class="subnav" ${reportMenuStyle}>${reportSubNavHtml()}</div>${navButton('account', '내 계정')}</nav><div style="margin-top:20px;padding:10px"><button class="btn secondary full" onclick="logout()">로그아웃</button></div><div class="sidebar-copyright">© 2026 JM Career. All Rights Reserved.</div></aside><main class="main">${activeMainSectionHtml()}</main></div>`;
+  return `<div class="shell"><aside class="sidebar no-print">${sideBrand}<nav class="nav"><button class="${state.active === 'modules' ? 'active' : ''}" onclick="toggleReportMenu()"><span>리포트 생성</span><span>${state.reportMenuOpen ? '⌃' : '⌄'}</span></button><div class="subnav" ${reportMenuStyle}>${reportSubNavHtml()}</div>${navButton('account', '내 계정')}</nav><div style="margin-top:20px;padding:10px"><button class="btn secondary full" onclick="logout()">로그아웃</button></div>${noticeSidebarHtml()}<div class="sidebar-copyright">© 2026 JM Career. All Rights Reserved.</div></aside><main class="main">${activeMainSectionHtml()}</main></div>`;
 }
 
 function setSection(id) {

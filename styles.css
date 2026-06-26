@@ -295,6 +295,32 @@
 .report-generating{
   cursor:wait;
 }
+
+.sidebar-group-title{color:#b8c7d8;font-size:12px;font-weight:900;padding:14px 12px 5px}
+.notice-subnav button span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-notice-box{margin:8px 10px 18px;padding:12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);border-radius:4px}
+.sidebar-notice-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px;color:#fff;font-size:13px;font-weight:900}
+.sidebar-notice-head button{border:0;background:transparent;color:#b8c7d8;font-size:11px;font-weight:800;padding:0}
+.sidebar-notice-head button:hover{color:#fff}
+.sidebar-notice-list{display:grid;gap:7px}
+.sidebar-notice-list button{width:100%;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#d9e5f2;border-radius:3px;padding:9px 10px;text-align:left;display:grid;gap:3px}
+.sidebar-notice-list button:hover,.sidebar-notice-list button.active{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.26);color:#fff}
+.sidebar-notice-list span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;font-weight:800}
+.sidebar-notice-list small{color:#b8c7d8;font-size:11px}
+.notice-layout{display:grid;grid-template-columns:280px 1fr;gap:18px;align-items:start}
+.notice-list-panel{background:#fff;border:1px solid var(--line);border-radius:4px;padding:14px}
+.notice-list-panel h3{margin:0 0 12px;color:var(--navy);font-size:16px}
+.notice-list{display:grid;gap:6px}
+.notice-list button{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:4px;padding:10px 11px;text-align:left;display:grid;gap:4px}
+.notice-list button.active,.notice-list button:hover{border-color:var(--blue);background:#f3f8fd}
+.notice-list button span:first-child{font-weight:800}
+.notice-list button span:last-child{font-size:12px;color:var(--muted)}
+.notice-detail-panel{min-height:420px}
+.notice-content{line-height:1.75;white-space:normal}
+
+@media(max-width:900px){
+  .notice-layout{grid-template-columns:1fr}
+}
 .report-generation-overlay{
   position:fixed;
   inset:0;

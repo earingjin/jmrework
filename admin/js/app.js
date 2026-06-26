@@ -11,12 +11,13 @@ function shellTemplate() {
         </div>
         <nav class="nav">
           <button class="${state.active === "admin" ? "active" : ""}" data-action="set-section" data-id="admin"><span>계정 관리</span><span>›</span></button>
+          <button class="${state.active === "notices" ? "active" : ""}" data-action="set-section" data-id="notices"><span>공지사항</span><span>›</span></button>
           <button class="${state.active === "statistics" ? "active" : ""}" data-action="set-section" data-id="statistics"><span>리포트 통계</span><span>›</span></button>
         </nav>
         <div class="logout"><button class="btn secondary full" data-action="logout">로그아웃</button></div>
         <div class="sidebar-copyright">© 2026 JM Career. All Rights Reserved.</div>
       </aside>
-      <main class="main">${adminSection()}${statisticsSection()}</main>
+      <main class="main">${adminSection()}${noticesSection()}${statisticsSection()}</main>
     </div>`;
 }
 
@@ -33,8 +34,9 @@ function render() {
 const actions = {
   login: async () => { if (await login()) { await loadData(); render(); } },
   logout: () => { logout(); render(); },
-  "set-section": async (id) => { state.active = id; if (id === "statistics") { await loadUsageEvents(); await loadGeminiErrors(); } render(); },
+  "set-section": async (id) => { state.active = id; if (id === "statistics") { await loadUsageEvents(); await loadGeminiErrors(); } if (id === "notices") await loadNotices(); render(); },
   "reload-gemini-errors": async () => { await loadGeminiErrors(); render(); },
+  "reload-notices": async () => { await loadNotices(); render(); },
   "set-statistics-period": (id) => { setStatisticsPeriod(id); render(); },
   "apply-statistics-period": () => { applyCustomStatisticsPeriod(); render(); },
   "download-statistics": (id) => downloadStatisticsExcel(id),
@@ -44,6 +46,10 @@ const actions = {
   "toggle-account": (id) => toggleAccountStatus(id) && render(),
   "delete-account": async (id) => { const ok = await deleteAccount(id); if (ok) render(); },
   "import-accounts": async () => { await importAccounts(); render(); },
+  "save-notice": async () => { const ok = await saveNotice(); if (ok) render(); },
+  "reset-notice": () => resetNoticeForm(),
+  "fill-notice": (id) => fillNoticeForm(id),
+  "delete-notice": async (id) => { const ok = await deleteNotice(id); if (ok) render(); },
 };
 
 document.addEventListener("click", (event) => {

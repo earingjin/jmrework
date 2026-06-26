@@ -118,6 +118,10 @@ function reportErrorType(event) {
   return event?.payload?.errorType || event?.payload?.errorName || event?.payload?.reason || REPORT_ERROR_TYPE.UNKNOWN_ERROR;
 }
 
+function reportRecoveryType(event) {
+  return event?.payload?.recoveryType || REPORT_RECOVERY_TYPE.NONE;
+}
+
 function accountBranch(counselorId) {
   const account = state.data.accounts.find((item) => item.id === counselorId);
   return account?.branch || "미지정";
@@ -225,10 +229,24 @@ function statisticsData() {
     return result;
   }, {});
   const errorCounts = Object.fromEntries(Object.entries(errorStats).map(([key, value]) => [key, value.count]));
+  const recoveryStats = completed.filter((event) => reportRecoveryType(event) && reportRecoveryType(event) !== REPORT_RECOVERY_TYPE.NONE).reduce((result, event) => {
+    const key = reportRecoveryType(event);
+    const finalStatus = reportFinalStatus(event);
+    if (!result[key]) result[key] = { count: 0, success: 0, recovered: 0, failed: 0, tokens: 0, duration: 0, retries: 0 };
+    result[key].count += 1;
+    if (finalStatus === REPORT_FINAL_STATUS.SUCCESS) result[key].success += 1;
+    if (finalStatus === REPORT_FINAL_STATUS.RECOVERED_SUCCESS) result[key].recovered += 1;
+    if (finalStatus === REPORT_FINAL_STATUS.FAILED) result[key].failed += 1;
+    result[key].tokens += tokenTotal(event);
+    result[key].duration += Number(event?.payload?.durationMs) || 0;
+    result[key].retries += Number(event?.payload?.retryCount) || 0;
+    return result;
+  }, {});
+  const recoveryCounts = Object.fromEntries(Object.entries(recoveryStats).map(([key, value]) => [key, value.count]));
   const typeData = usageGroupData(events, (event) => event?.payload?.reportType || "unknown", reportTypeName);
   const modelData = usageGroupData(events, (event) => event?.payload?.modelName || "unknown");
   const branchData = usageGroupData(events, (event) => event?.payload?.branch || accountBranch(event?.payload?.counselorId));
-  return { range, events, geminiErrors, started, succeeded, recovered, failed, completed, totalTokens, tokenRecorded, averageTokens, totalRetries, averageDuration, errorCounts, errorStats, typeData, modelData, branchData };
+  return { range, events, geminiErrors, started, succeeded, recovered, failed, completed, totalTokens, tokenRecorded, averageTokens, totalRetries, averageDuration, errorCounts, errorStats, recoveryCounts, recoveryStats, typeData, modelData, branchData };
 }
 
 function usageExportRows(data, label) {
@@ -263,6 +281,7 @@ function statisticsExportSheets() {
     "평균 생성 시간(ms)": Math.round(data.averageDuration),
     "재시도 횟수": data.totalRetries,
     "오류 유형 수": Object.keys(data.errorCounts).length,
+    "복구 유형 수": Object.keys(data.recoveryCounts).length,
     "Gemini 서버 오류": data.geminiErrors.length,
   }];
   const errors = Object.entries(data.errorStats).sort((a, b) => b[1].count - a[1].count).map(([type, stat]) => ({
@@ -271,6 +290,17 @@ function statisticsExportSheets() {
     "복구 성공 건수": stat.recovered,
     "최종 실패 건수": stat.failed,
     "복구율(%)": Number((stat.count ? stat.recovered / stat.count * 100 : 0).toFixed(1)),
+  }));
+  const recovery = Object.entries(data.recoveryStats).sort((a, b) => b[1].count - a[1].count).map(([type, stat]) => ({
+    "복구 유형": type,
+    "발생 건수": stat.count,
+    "최종 성공 건수": stat.success,
+    "복구 성공 건수": stat.recovered,
+    "최종 실패 건수": stat.failed,
+    "복구 성공률(%)": Number((stat.count ? stat.recovered / stat.count * 100 : 0).toFixed(1)),
+    "총 토큰": stat.tokens,
+    "재시도 횟수": stat.retries,
+    "평균 시간(ms)": Math.round(stat.count ? stat.duration / stat.count : 0),
   }));
   const gemini = data.geminiErrors.map((error) => ({
     "발생 시각": error?.occurredAt || "",
@@ -284,6 +314,7 @@ function statisticsExportSheets() {
     model: usageExportRows(data.modelData, "모델"),
     branch: usageExportRows(data.branchData, "지사"),
     errors,
+    recovery,
     gemini,
   };
 }
@@ -303,6 +334,7 @@ function downloadStatisticsExcel(kind = "all") {
     model: ["모델별", sheets.model],
     branch: ["지사별", sheets.branch],
     errors: ["오류 유형", sheets.errors],
+    recovery: ["복구 유형", sheets.recovery],
     gemini: ["Gemini 서버 오류", sheets.gemini],
   };
   if (kind === "all") Object.values(definitions).forEach(([name, rows]) => appendStatisticsSheet(workbook, name, rows));
@@ -318,7 +350,7 @@ function downloadStatisticsExcel(kind = "all") {
 
 function statisticsSection() {
   const data = statisticsData();
-  const { range, geminiErrors, started, succeeded, recovered, failed, totalTokens, tokenRecorded, averageTokens, totalRetries, averageDuration, errorCounts, errorStats } = data;
+  const { range, geminiErrors, started, succeeded, recovered, failed, totalTokens, tokenRecorded, averageTokens, totalRetries, averageDuration, errorCounts, errorStats, recoveryCounts, recoveryStats } = data;
   const totalAttempts = started.length || data.completed.length;
   const errorRows = Object.entries(errorStats)
     .sort((a, b) => b[1].count - a[1].count)
@@ -327,6 +359,13 @@ function statisticsSection() {
   const errorContents = errorRows
     ? `<div class="table-wrap"><table><thead><tr><th>오류 유형</th><th>발생 건수</th><th>복구 성공 건수</th><th>최종 실패 건수</th><th>복구율</th></tr></thead><tbody>${errorRows}</tbody></table></div>`
     : '<div class="empty">기록된 리포트 생성 오류가 없습니다.</div>';
+  const recoveryRows = Object.entries(recoveryStats)
+    .sort((a, b) => b[1].count - a[1].count)
+    .map(([type, stat]) => `<tr><td>${escapeHtml(type)}</td><td><strong>${numberText(stat.count)}건</strong></td><td>${numberText(stat.success)}건</td><td>${numberText(stat.recovered)}건</td><td>${numberText(stat.failed)}건</td><td>${percentText(stat.recovered, stat.count)}</td><td>${numberText(stat.tokens)}</td><td>${numberText(stat.retries)}</td><td>${durationText(stat.count ? stat.duration / stat.count : 0)}</td></tr>`)
+    .join("");
+  const recoveryContents = recoveryRows
+    ? `<div class="table-wrap"><table><thead><tr><th>복구 유형</th><th>발생 건수</th><th>최종 성공 건수</th><th>복구 성공 건수</th><th>최종 실패 건수</th><th>복구 성공률</th><th>총 토큰</th><th>재시도 횟수</th><th>평균 시간</th></tr></thead><tbody>${recoveryRows}</tbody></table></div>`
+    : '<div class="empty">기록된 복구 유형이 없습니다.</div>';
 
   const typeRows = usageGroupRows(data.typeData);
   const modelRows = usageGroupRows(data.modelData);
@@ -348,12 +387,14 @@ function statisticsSection() {
         <div class="metric"><span>평균 생성 시간</span><strong>${durationText(averageDuration)}</strong></div>
         <div class="metric"><span>재시도 횟수</span><strong>${numberText(totalRetries)}</strong></div>
         <div class="metric"><span>오류 유형 수</span><strong>${numberText(Object.keys(errorCounts).length)}</strong></div>
+        <div class="metric"><span>복구 유형 수</span><strong>${numberText(Object.keys(recoveryCounts).length)}</strong></div>
         <div class="metric"><span>Gemini 서버 오류</span><strong>${numberText(geminiErrors.length)}</strong></div>
       </div>
       ${usageTable("리포트 종류별 사용량", "비용과 기능별 수요를 비교합니다.", typeRows, "리포트 종류", "type")}
       ${usageTable("모델별 사용량", "모델별 성공률, 토큰, 평균 시간을 확인합니다.", modelRows, "모델", "model")}
       ${usageTable("지사별 사용량", "지사별 도입·활용 수준을 비교합니다.", branchRows, "지사", "branch")}
       <div class="panel"><div class="panel-head"><div><h3>오류 유형</h3><span class="small">장애 대응과 기능 개선 우선순위에 활용합니다.</span></div><button class="btn secondary" data-action="download-statistics" data-id="errors">엑셀 다운로드</button></div><div class="panel-body">${errorContents}</div></div>
+      <div class="panel"><div class="panel-head"><div><h3>복구 유형</h3><span class="small">코드 repair, AI JSON repair, 전체 재생성, 재시도 성공을 구분합니다.</span></div><button class="btn secondary" data-action="download-statistics" data-id="recovery">엑셀 다운로드</button></div><div class="panel-body">${recoveryContents}</div></div>
       ${geminiServerErrorPanels(geminiErrors)}
       <p class="note">기존 이벤트에 finalStatus, tokenUsage, 지사 또는 재시도 값이 없으면 레거시 이벤트명과 기본값으로 집계됩니다.</p>
     </section>`;

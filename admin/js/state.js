@@ -5,6 +5,7 @@ const state = {
   data: {
     accounts: [],
     reports: [],
+    notices: [],
     geminiErrors: [],
   },
   importResult: null,
