@@ -11,13 +11,8 @@ const REPORT_RETRY_REASON = Object.freeze({ NONE: "NONE", JSON_PARSE_ERROR: "JSO
 
 function reportTypeName(type) {
   return {
-    company: "기업 분석 리포트",
     interest: "직업선호도검사 리포트",
-    interview: "상황 면접 시뮬레이션",
-    senior: "중장년 경력자산 리포트",
     success: "취업 성공 사례",
-    jobAnalysis: "직무분석리포트",
-    jobs: "채용정보 매칭",
   }[type] || type || "기타 리포트";
 }
 
@@ -36,6 +31,10 @@ function percentText(value, total) {
 
 function tokenTotal(event) {
   return Number(event?.payload?.tokenUsage?.totalTokens) || 0;
+}
+
+function isReportStartEvent(event) {
+  return event?.eventName === EVENTS.REPORT_GENERATION_STARTED;
 }
 
 function dateInputText(date) {
@@ -104,11 +103,19 @@ function isReportCompletionEvent(event) {
   return [EVENTS.REPORT_GENERATION_COMPLETED, EVENTS.REPORT_GENERATION_SUCCEEDED, EVENTS.REPORT_GENERATION_FAILED].includes(event?.eventName);
 }
 
+function isReportUsageEvent(event) {
+  return isReportStartEvent(event) || isReportCompletionEvent(event);
+}
+
 function reportFinalStatus(event) {
   if (event?.payload?.finalStatus) return event.payload.finalStatus;
   if (event?.eventName === EVENTS.REPORT_GENERATION_SUCCEEDED) return REPORT_FINAL_STATUS.SUCCESS;
   if (event?.eventName === EVENTS.REPORT_GENERATION_FAILED) return REPORT_FINAL_STATUS.FAILED;
   return "";
+}
+
+function reportErrorType(event) {
+  return event?.payload?.errorType || event?.payload?.errorName || event?.payload?.reason || REPORT_ERROR_TYPE.UNKNOWN_ERROR;
 }
 
 function accountBranch(counselorId) {
@@ -119,11 +126,12 @@ function accountBranch(counselorId) {
 function usageGroupData(events, keyFn, labelFn = (key) => key) {
   const groups = new Map();
   events.forEach((event) => {
+    if (!isReportUsageEvent(event)) return;
     const key = keyFn(event) || "미지정";
     if (!groups.has(key)) groups.set(key, { attempts: 0, success: 0, recovered: 0, failed: 0, tokens: 0, duration: 0, completed: 0, retries: 0 });
     const row = groups.get(key);
     const finalStatus = reportFinalStatus(event);
-    if (event?.eventName === EVENTS.REPORT_GENERATION_STARTED) row.attempts += 1;
+    if (isReportStartEvent(event)) row.attempts += 1;
     if (finalStatus === REPORT_FINAL_STATUS.SUCCESS) {
       row.success += 1;
       row.tokens += tokenTotal(event);
@@ -141,19 +149,29 @@ function usageGroupData(events, keyFn, labelFn = (key) => key) {
   });
 
   return [...groups.entries()]
-    .sort((a, b) => b[1].attempts - a[1].attempts)
-    .map(([key, row]) => ({ ...row, label: labelFn(key), successRate: row.attempts ? (row.success + row.recovered) / row.attempts : 0, averageDurationMs: row.completed ? row.duration / row.completed : 0 }));
+    .sort((a, b) => (b[1].attempts || b[1].completed) - (a[1].attempts || a[1].completed))
+    .map(([key, row]) => {
+      const successTotal = row.success + row.recovered;
+      const denominator = row.attempts || row.completed;
+      return {
+        ...row,
+        label: labelFn(key),
+        successRate: denominator ? successTotal / denominator : 0,
+        averageDurationMs: row.completed ? row.duration / row.completed : 0,
+        averageTokens: successTotal ? row.tokens / successTotal : 0,
+      };
+    });
 }
 
 function usageGroupRows(data) {
   return data
-    .map((row) => `<tr><td><strong>${escapeHtml(row.label)}</strong></td><td>${numberText(row.attempts)}</td><td>${numberText(row.success)}</td><td>${numberText(row.recovered)}</td><td>${numberText(row.failed)}</td><td>${percentText(row.success + row.recovered, row.attempts)}</td><td>${numberText(row.tokens)}</td><td>${durationText(row.averageDurationMs)}</td><td>${numberText(row.retries)}</td></tr>`)
+    .map((row) => `<tr><td><strong>${escapeHtml(row.label)}</strong></td><td>${numberText(row.attempts || row.completed)}</td><td>${numberText(row.success)}</td><td>${numberText(row.recovered)}</td><td>${numberText(row.failed)}</td><td>${percentText(row.success + row.recovered, row.attempts || row.completed)}</td><td>${numberText(row.tokens)}</td><td>${numberText(row.averageTokens)}</td><td>${durationText(row.averageDurationMs)}</td><td>${numberText(row.retries)}</td></tr>`)
     .join("");
 }
 
 function usageTable(title, description, rows, firstColumn, exportKind) {
   const contents = rows
-    ? `<div class="table-wrap"><table><thead><tr><th>${firstColumn}</th><th>전체 생성</th><th>최종 성공</th><th>복구 성공</th><th>최종 실패</th><th>성공률</th><th>토큰</th><th>평균 시간</th><th>재시도</th></tr></thead><tbody>${rows}</tbody></table></div>`
+    ? `<div class="table-wrap"><table><thead><tr><th>${firstColumn}</th><th>전체 생성</th><th>최종 성공</th><th>복구 성공</th><th>최종 실패</th><th>성공률</th><th>총 토큰</th><th>평균 토큰</th><th>평균 시간</th><th>재시도</th></tr></thead><tbody>${rows}</tbody></table></div>`
     : '<div class="empty">집계할 리포트 생성 이벤트가 없습니다.</div>';
   return `<div class="panel"><div class="panel-head"><div><h3>${title}</h3><span class="small">${description}</span></div><button class="btn secondary" data-action="download-statistics" data-id="${exportKind}">엑셀 다운로드</button></div><div class="panel-body">${contents}</div></div>`;
 }
@@ -185,18 +203,21 @@ function statisticsData() {
   const events = (Array.isArray(state.data.usageEvents) ? state.data.usageEvents : []).filter((event) => inStatisticsPeriod(event?.recordedAt, range));
   const geminiErrors = (Array.isArray(state.data.geminiErrors) ? state.data.geminiErrors : []).filter((error) => inStatisticsPeriod(error?.occurredAt, range));
   const completed = events.filter(isReportCompletionEvent);
-  const started = events.filter((event) => event?.eventName === EVENTS.REPORT_GENERATION_STARTED);
+  const started = events.filter(isReportStartEvent);
   const succeeded = completed.filter((event) => reportFinalStatus(event) === REPORT_FINAL_STATUS.SUCCESS);
   const recovered = completed.filter((event) => reportFinalStatus(event) === REPORT_FINAL_STATUS.RECOVERED_SUCCESS);
   const failed = completed.filter((event) => reportFinalStatus(event) === REPORT_FINAL_STATUS.FAILED);
   const totalTokens = [...succeeded, ...recovered].reduce((sum, event) => sum + tokenTotal(event), 0);
+  const tokenRecorded = completed.filter((event) => tokenTotal(event) > 0);
+  const tokenSuccessCount = [...succeeded, ...recovered].filter((event) => tokenTotal(event) > 0).length;
+  const averageTokens = tokenSuccessCount ? totalTokens / tokenSuccessCount : 0;
   const totalRetries = completed.reduce((sum, event) => sum + (Number(event?.payload?.retryCount) || 0), 0);
   const averageDuration = completed.length
     ? completed.reduce((sum, event) => sum + (Number(event?.payload?.durationMs) || 0), 0) / completed.length
     : 0;
 
-  const errorStats = completed.filter((event) => event?.payload?.errorType && event.payload.errorType !== REPORT_ERROR_TYPE.NONE).reduce((result, event) => {
-    const key = event.payload.errorType || REPORT_ERROR_TYPE.UNKNOWN_ERROR;
+  const errorStats = completed.filter((event) => reportErrorType(event) && reportErrorType(event) !== REPORT_ERROR_TYPE.NONE).reduce((result, event) => {
+    const key = reportErrorType(event);
     if (!result[key]) result[key] = { count: 0, recovered: 0, failed: 0 };
     result[key].count += 1;
     if (reportFinalStatus(event) === REPORT_FINAL_STATUS.RECOVERED_SUCCESS) result[key].recovered += 1;
@@ -205,23 +226,21 @@ function statisticsData() {
   }, {});
   const errorCounts = Object.fromEntries(Object.entries(errorStats).map(([key, value]) => [key, value.count]));
   const typeData = usageGroupData(events, (event) => event?.payload?.reportType || "unknown", reportTypeName);
-  const counselorData = usageGroupData(events, (event) => event?.payload?.counselorId || event?.payload?.counselorName || "미지정", (key) => {
-    const account = state.data.accounts.find((item) => item.id === key);
-    return maskCounselorName(account?.name || key);
-  });
+  const modelData = usageGroupData(events, (event) => event?.payload?.modelName || "unknown");
   const branchData = usageGroupData(events, (event) => event?.payload?.branch || accountBranch(event?.payload?.counselorId));
-  return { range, events, geminiErrors, started, succeeded, recovered, failed, completed, totalTokens, totalRetries, averageDuration, errorCounts, errorStats, typeData, counselorData, branchData };
+  return { range, events, geminiErrors, started, succeeded, recovered, failed, completed, totalTokens, tokenRecorded, averageTokens, totalRetries, averageDuration, errorCounts, errorStats, typeData, modelData, branchData };
 }
 
 function usageExportRows(data, label) {
   return data.map((row) => ({
     [label]: row.label,
-    "전체 생성": row.attempts,
+    "전체 생성": row.attempts || row.completed,
     "최종 성공": row.success,
     "복구 성공": row.recovered,
     "최종 실패": row.failed,
-    "성공률(%)": Number(((row.success + row.recovered) / (row.attempts || 1) * 100).toFixed(1)),
+    "성공률(%)": Number(((row.success + row.recovered) / (row.attempts || row.completed || 1) * 100).toFixed(1)),
     "토큰 사용량": row.tokens,
+    "평균 토큰": Math.round(row.averageTokens),
     "평균 생성 시간(ms)": Math.round(row.averageDurationMs),
     "재시도 횟수": row.retries,
   }));
@@ -229,15 +248,18 @@ function usageExportRows(data, label) {
 
 function statisticsExportSheets() {
   const data = statisticsData();
+  const totalAttempts = data.started.length || data.completed.length;
   const summary = [{
     "조회 시작일": data.range.start || "전체",
     "조회 종료일": data.range.end || "전체",
-    "전체 생성 건수": data.started.length,
+    "전체 생성 건수": totalAttempts,
     "최종 성공 건수": data.succeeded.length,
     "복구 성공 건수": data.recovered.length,
     "최종 실패 건수": data.failed.length,
-    "성공률(%)": Number((data.started.length ? (data.succeeded.length + data.recovered.length) / data.started.length * 100 : 0).toFixed(1)),
+    "성공률(%)": Number((totalAttempts ? (data.succeeded.length + data.recovered.length) / totalAttempts * 100 : 0).toFixed(1)),
     "총 토큰 사용량": data.totalTokens,
+    "토큰 기록 완료 건수": data.tokenRecorded.length,
+    "평균 토큰": Math.round(data.averageTokens),
     "평균 생성 시간(ms)": Math.round(data.averageDuration),
     "재시도 횟수": data.totalRetries,
     "오류 유형 수": Object.keys(data.errorCounts).length,
@@ -259,7 +281,7 @@ function statisticsExportSheets() {
   return {
     summary,
     type: usageExportRows(data.typeData, "리포트 종류"),
-    counselor: usageExportRows(data.counselorData, "상담사"),
+    model: usageExportRows(data.modelData, "모델"),
     branch: usageExportRows(data.branchData, "지사"),
     errors,
     gemini,
@@ -278,7 +300,7 @@ function downloadStatisticsExcel(kind = "all") {
   const definitions = {
     summary: ["운영 요약", sheets.summary],
     type: ["리포트 종류별", sheets.type],
-    counselor: ["상담사별", sheets.counselor],
+    model: ["모델별", sheets.model],
     branch: ["지사별", sheets.branch],
     errors: ["오류 유형", sheets.errors],
     gemini: ["Gemini 서버 오류", sheets.gemini],
@@ -296,7 +318,8 @@ function downloadStatisticsExcel(kind = "all") {
 
 function statisticsSection() {
   const data = statisticsData();
-  const { range, geminiErrors, started, succeeded, recovered, failed, totalTokens, totalRetries, averageDuration, errorCounts, errorStats } = data;
+  const { range, geminiErrors, started, succeeded, recovered, failed, totalTokens, tokenRecorded, averageTokens, totalRetries, averageDuration, errorCounts, errorStats } = data;
+  const totalAttempts = started.length || data.completed.length;
   const errorRows = Object.entries(errorStats)
     .sort((a, b) => b[1].count - a[1].count)
     .map(([type, stat]) => `<tr><td>${escapeHtml(type)}</td><td><strong>${numberText(stat.count)}건</strong></td><td>${numberText(stat.recovered)}건</td><td>${numberText(stat.failed)}건</td><td>${percentText(stat.recovered, stat.count)}</td></tr>`)
@@ -306,7 +329,7 @@ function statisticsSection() {
     : '<div class="empty">기록된 리포트 생성 오류가 없습니다.</div>';
 
   const typeRows = usageGroupRows(data.typeData);
-  const counselorRows = usageGroupRows(data.counselorData);
+  const modelRows = usageGroupRows(data.modelData);
   const branchRows = usageGroupRows(data.branchData);
 
   return `
@@ -315,21 +338,23 @@ function statisticsSection() {
       ${statisticsFilterHtml(range)}
       <div class="actions statistics-download-actions"><button class="btn" data-action="download-statistics" data-id="all">전체 통계 엑셀 다운로드</button><button class="btn secondary" data-action="download-statistics" data-id="summary">운영 요약 다운로드</button></div>
       <div class="cards">
-        <div class="metric"><span>전체 생성 건수</span><strong>${numberText(started.length)}</strong></div>
+        <div class="metric"><span>전체 생성 건수</span><strong>${numberText(totalAttempts)}</strong></div>
         <div class="metric"><span>최종 성공 / 복구 성공</span><strong>${numberText(succeeded.length)} / ${numberText(recovered.length)}</strong></div>
         <div class="metric"><span>최종 실패</span><strong>${numberText(failed.length)}</strong></div>
-        <div class="metric"><span>성공률</span><strong>${percentText(succeeded.length + recovered.length, started.length)}</strong></div>
+        <div class="metric"><span>성공률</span><strong>${percentText(succeeded.length + recovered.length, totalAttempts)}</strong></div>
         <div class="metric"><span>총 토큰 사용량</span><strong>${numberText(totalTokens)}</strong></div>
+        <div class="metric"><span>토큰 기록 완료</span><strong>${numberText(tokenRecorded.length)}건</strong></div>
+        <div class="metric"><span>평균 토큰</span><strong>${numberText(averageTokens)}</strong></div>
         <div class="metric"><span>평균 생성 시간</span><strong>${durationText(averageDuration)}</strong></div>
         <div class="metric"><span>재시도 횟수</span><strong>${numberText(totalRetries)}</strong></div>
         <div class="metric"><span>오류 유형 수</span><strong>${numberText(Object.keys(errorCounts).length)}</strong></div>
         <div class="metric"><span>Gemini 서버 오류</span><strong>${numberText(geminiErrors.length)}</strong></div>
       </div>
       ${usageTable("리포트 종류별 사용량", "비용과 기능별 수요를 비교합니다.", typeRows, "리포트 종류", "type")}
-      ${usageTable("상담사별 사용량", "지원과 교육이 필요한 사용 패턴을 확인합니다.", counselorRows, "상담사", "counselor")}
+      ${usageTable("모델별 사용량", "모델별 성공률, 토큰, 평균 시간을 확인합니다.", modelRows, "모델", "model")}
       ${usageTable("지사별 사용량", "지사별 도입·활용 수준을 비교합니다.", branchRows, "지사", "branch")}
       <div class="panel"><div class="panel-head"><div><h3>오류 유형</h3><span class="small">장애 대응과 기능 개선 우선순위에 활용합니다.</span></div><button class="btn secondary" data-action="download-statistics" data-id="errors">엑셀 다운로드</button></div><div class="panel-body">${errorContents}</div></div>
       ${geminiServerErrorPanels(geminiErrors)}
-      <p class="note">기존 이벤트에 지사 또는 재시도 값이 없으면 각각 미지정, 0으로 집계됩니다.</p>
+      <p class="note">기존 이벤트에 finalStatus, tokenUsage, 지사 또는 재시도 값이 없으면 레거시 이벤트명과 기본값으로 집계됩니다.</p>
     </section>`;
 }

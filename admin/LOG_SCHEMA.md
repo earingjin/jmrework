@@ -1,134 +1,48 @@
-# Usage Event Schema
+# 관리자 통계 스키마
 
-## 저장소
-계정 저장소
+관리자페이지는 리포트 본문을 읽지 않고 `usage_events`만 집계한다.
 
-- ai_career_accounts_v1
+## 현재 리포트 이벤트
 
-사용 이벤트 저장소
+- `report_generation_started`: 리포트 생성 시작
+- `report_generation_completed`: 리포트 생성 완료
 
-- ai_career_usage_events_v1
+`report_generation_completed.payload.finalStatus` 값으로 최종 상태를 구분한다.
 
-레거시 저장소
-
-- ai_career_report_index_v2
-
----
-
-## Usage Event 구조
-
-```
+```json
 {
-  eventName: string,
-  payload: object,
-  recordedAt: string
+  "finalStatus": "SUCCESS | RECOVERED_SUCCESS | FAILED",
+  "reportType": "interest | success",
+  "durationMs": 0,
+  "modelName": "gemini-2.5-flash",
+  "errorType": "NONE | JSON_PARSE_ERROR | RATE_LIMIT | ...",
+  "retryCount": 0,
+  "retryReason": "NONE | JSON_PARSE_ERROR | RATE_LIMIT | ...",
+  "recoveryType": "NONE | CODE_REPAIR | AI_JSON_REPAIR | FULL_REGENERATION | RETRY_SUCCESS",
+  "tokenUsage": {
+    "promptTokens": 0,
+    "outputTokens": 0,
+    "totalTokens": 0,
+    "thoughtsTokens": 0
+  },
+  "branch": "지사명"
 }
 ```
 
----
+## 레거시 이벤트 호환
 
-## eventName 목록
+기존 데이터의 아래 이벤트도 계속 집계한다.
 
-### report_generation_started
-설명:
-리포트 생성 시작
+- `report_generation_succeeded` → `SUCCESS`
+- `report_generation_failed` → `FAILED`
 
-payload
+레거시 이벤트에 `tokenUsage`, `retryCount`, `finalStatus`가 없으면 기본값으로 집계한다.
 
-```
-{
-  reportType,
-  counselorId,
-  counselorName
-}
-```
+## 관리자페이지 집계 기준
 
----
-
-### report_generation_succeeded
-설명:
-리포트 생성 성공
-
-payload
-
-```
-{
-  reportType,
-  durationMs,
-  counselorId,
-  counselorName
-}
-```
-
----
-
-### report_generation_failed
-설명:
-리포트 생성 실패
-
-payload
-
-```
-{
-  reportType,
-  durationMs,
-  counselorId,
-  counselorName,
-  reason,
-  errorName
-}
-```
-
----
-
-### ai_request_succeeded
-설명:
-Gemini API 호출 성공
-
-payload
-
-```
-{
-  durationMs,
-  status
-}
-```
-
----
-
-### ai_request_failed
-설명:
-Gemini API 호출 실패
-
-payload
-
-```
-{
-  durationMs,
-  status,
-  errorName
-}
-```
-
----
-
-## 관리자페이지 사용 규칙
-관리자페이지는 리포트 본문을 읽지 않는다.
-
-관리자페이지는 ai_career_usage_events_v1만 읽는다.
-
-통계는 usage event 기반으로 계산한다.
-
----
-
-## 유지보수 원칙
-새 리포트 추가 시:
-
-1. reportType 추가
-2. report_generation_started 기록
-3. report_generation_succeeded 기록
-4. report_generation_failed 기록
-
-기존 통계 로직은 수정하지 않는다.
-
-eventName 규칙을 유지한다.
+- 전체 생성 건수
+- 리포트 종류별 성공/실패/토큰/평균 시간
+- 모델별 성공/실패/토큰/평균 시간
+- 지사별 성공/실패/토큰/평균 시간
+- 오류 유형별 발생/복구/실패
+- Gemini 서버 오류

@@ -63,6 +63,7 @@ function recordGeminiError(model, status, message) {
 function sanitizeUsagePayload(payload) {
   const allowedFields = [
     'reportType',
+    'finalStatus',
     'durationMs',
     'status',
     'errorName',
@@ -74,6 +75,9 @@ function sanitizeUsagePayload(payload) {
     'branch',
     'tokenUsage',
     'retryCount',
+    'retryReason',
+    'recoveryType',
+    'startedAt',
     'finishReason',
     'parseStage',
     'modelName',
