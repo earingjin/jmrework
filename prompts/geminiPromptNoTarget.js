@@ -20,7 +20,6 @@ const NO_TARGET_INTEREST_SCHEMA = {
       preparation: ''
     }
   ],
-  encouragementSlogans: [''],
   aiLifeQuestions: ['']
 };
 
@@ -55,7 +54,6 @@ Gemini는 변하는 상담 문장과 분석 내용만 작성하고, 표 구조/�
 - swot.opportunities
 - swot.threats
 - recommendedJobs
-- encouragementSlogans
 - aiLifeQuestions
 
 [작성 기준]
@@ -82,7 +80,6 @@ Gemini는 변하는 상담 문장과 분석 내용만 작성하고, 표 구조/�
 - recommendedJobs.relatedStrength는 내담자의 검사 결과, 학력, 자격증, 상담사 메모와 연결되는 강점을 구체적으로 1문장 작성하세요.
 - 성격검사가 입력된 경우 recommendedJobs.relatedStrength 중 최소 2개에는 성격검사에서 드러난 일하는 방식 또는 보완점을 직업흥미 결과와 함께 연결하세요.
 - recommendedJobs.preparation은 준비 과제 및 필요한 경우 구체적인 자격증 추천까지 1문장으로 작성하세요.
-- encouragementSlogans는 정확히 4개 작성하세요. 내담자의 강점 위주로 작성하며, 내담자를 격려하기 위해 자존감을 높이는 감성적인 메시지 한 줄로 작성하세요.
 - aiLifeQuestions는 정확히 10개의 문자열 배열로 작성하세요. 객체가 아니라 문자열만 넣으세요.
 - aiLifeQuestions는 상담사가 상담 장면에서 바로 물을 수 있는 질문으로 작성하세요.
 - aiLifeQuestions에는 "검사 결과와 실제 경험의 연결성을 확인하기 위함", "상담 장면에서 실행 가능한 탐색 과제로 연결합니다" 같은 설명문, 의도, 활용법을 넣지 마세요.

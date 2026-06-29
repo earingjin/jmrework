@@ -55,6 +55,10 @@ function moduleDescription(type) {
   return reportDefinition(type)?.description || (sc('modules').moduleDesc || {})[type] || '';
 }
 
+function moduleNoticeTitle(type) {
+  return reportDefinition(type)?.noticeTitle || reportTypeName(type);
+}
+
 function defaultReportType() {
   return window.REPORT_REGISTRY?.defaultId?.() || 'interest';
 }
@@ -150,6 +154,7 @@ async function load() {
   ensureDefaults();
   state.selectedParticipantId = state.data.participants[0]?.id || 'session_client';
   state.view = 'landing';
+  await loadPublicNotices();
   persist();
 }
 
@@ -179,6 +184,18 @@ async function loadNotices() {
     state.data.notices = response.ok && Array.isArray(data?.notices) ? data.notices : [];
   } catch (err) {
     console.warn('공지사항 불러오기 실패', err);
+    state.data.notices = [];
+  }
+  return state.data.notices;
+}
+
+async function loadPublicNotices() {
+  try {
+    const response = await fetch('/api/notices/public', { cache: 'no-store' });
+    const data = await response.json().catch(() => null);
+    state.data.notices = response.ok && Array.isArray(data?.notices) ? data.notices : [];
+  } catch (err) {
+    console.warn('공개 공지사항 불러오기 실패', err);
     state.data.notices = [];
   }
   return state.data.notices;

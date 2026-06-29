@@ -9,7 +9,7 @@ function goLanding() {
   pushHistory();
   state.user = null;
   state.view = 'landing';
-  render();
+  loadPublicNotices().finally(() => render());
 }
 
 function loginTemplate() {
@@ -85,5 +85,5 @@ function logout() {
   resetSensitiveSessionData();
   state.view = 'landing';
   persist();
-  render();
+  loadPublicNotices().finally(() => render());
 }

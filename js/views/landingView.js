@@ -55,6 +55,37 @@ function landingFeatureStripHtml() {
     .join('');
 }
 
+function landingNoticeDateText(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().slice(0, 10);
+}
+
+function landingNoticeBoardHtml() {
+  const notices = (Array.isArray(state.data.notices) ? state.data.notices : [])
+    .filter((notice) => notice.status === 'published')
+    .sort((a, b) => {
+      if (Boolean(a.pinned) !== Boolean(b.pinned)) return a.pinned ? -1 : 1;
+      return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0);
+    })
+    .slice(0, 5);
+  return `
+    <section class="landing-notice-board" aria-label="공지사항">
+      <div class="landing-notice-head">
+        <strong>공지사항</strong>
+        <span>최근 안내</span>
+      </div>
+      <div class="landing-notice-list">
+        ${notices.length ? notices.map((notice) => `
+          <div class="landing-notice-row">
+            <span>${notice.pinned ? '[고정] ' : ''}${escapeHtml(notice.title)}</span>
+            <small>${escapeHtml(landingNoticeDateText(notice.updatedAt || notice.createdAt))}</small>
+          </div>`).join('') : '<div class="landing-notice-empty">등록된 공지사항이 없습니다.</div>'}
+      </div>
+    </section>`;
+}
+
 function landingTemplate() {
   const content = LANDING_CONTENT;
   const reports = content.reports;
@@ -81,6 +112,7 @@ function landingTemplate() {
               <button class="btn" onclick="goLogin()">${content.buttons.start}</button>
               <a class="btn secondary" href="#success-report">${content.buttons.viewReport}</a>
             </div>
+            ${landingNoticeBoardHtml()}
           </div>
           <div class="real-hero-image">
             <img src="${LANDING_IMAGES.hero}" alt="${content.hero.imageAlt}">

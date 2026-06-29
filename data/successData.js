@@ -59,7 +59,7 @@ SUCCESS_CASE_SEARCH_ASSIST.ui={
   search:'성공사례 검색',
   reset:'검색 초기화',
   insightLabel:'참여자에게 연결할 시사점(선택)',
-  insightHelp:'참여자의 이전 경력, 자격 보유 현황, 희망 근무조건, 보완할 준비 등을 작성해주세요. 자세하게 작성할수록 더 자세한 내담자 맞춤 답변이 가능합니다.',
+  insightHelp:'1. 참여자의 관심 분야, 이전 경력, 희망 근무 조건<br>2. 자세하게 작성할수록 더 자세한 맞춤 답변 가능',
   insightPlaceholder:'',
   generate:'상담지원 리포트 생성',
   emptySearch:'',

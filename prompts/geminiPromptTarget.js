@@ -32,7 +32,6 @@ const TARGET_INTEREST_SCHEMA = {
   demographicOutlook: '',
   digitalTransformationOutlook: '',
   finalStrategy: '',
-  encouragementSlogans: [],
   coachingQuestions: [''],
   counselorNotice: '본 리포트는 AI가 분석한 데이터이며 내용에 대한 최종 평가는 전문가에게 있습니다.'
 };
@@ -74,7 +73,6 @@ Gemini는 변하는 상담 문장과 분석 내용만 작성하고, 표 구조/�
 - demographicOutlook
 - digitalTransformationOutlook
 - finalStrategy
-- encouragementSlogans
 - coachingQuestions
 
 [작성 기준]
@@ -96,7 +94,6 @@ Gemini는 변하는 상담 문장과 분석 내용만 작성하고, 표 구조/�
 - demographicOutlook는 희망직무와 관련된 인구통계학적 트렌드와 전망을 2~3문장으로 작성하세요.
 - digitalTransformationOutlook, finalStrategy는 각각 2~3문장씩 2문단으로 작성하고, 일반론이 아니라 입력된 검사 결과와 희망직무를 연결하세요.
 - coachingQuestions는 정확히 10개의 문자열 배열로 작성하세요. 객체가 아니라 상담사가 바로 물을 수 있는 자연스러운 1문장 질문만 넣으세요.
-- encouragementSlogans는 정확히 4개 작성하세요. 내담자의 강점 위주로 작성하며, 내담자를 격려하기 위해 자존감을 높이는 감성적인 메시지 한 줄로 작성하세요.
 - 모든 문장은 자연스러운 한국어 상담 문체로 작성하고, 과장된 확신보다 가능성 중심으로 표현하세요.
 - HTML 태그, markdown, 코드블록, 설명문 없이 JSON 객체만 반환하세요.
 

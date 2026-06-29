@@ -61,6 +61,24 @@ router.get('/notices', authRequired, async (_req, res) => {
   }
 });
 
+router.get('/notices/public', async (_req, res) => {
+  try {
+    if (!db.enabled) return res.json({ notices: [] });
+    const result = await db.query(
+      `SELECT id,title,status,pinned,created_at,updated_at
+       FROM notices
+       WHERE status = $1
+       ORDER BY pinned DESC, created_at DESC
+       LIMIT 5`,
+      ['published']
+    );
+    return res.json({ notices: result.rows.map(normalizeNotice) });
+  } catch (err) {
+    console.error('[notices-public-list-error]', err);
+    return res.status(500).json({ error: { message: 'Could not list notices' } });
+  }
+});
+
 router.get('/notices/admin', authRequired, adminRequired, async (_req, res) => {
   try {
     if (!db.enabled) return res.json({ notices: [] });
