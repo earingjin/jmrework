@@ -204,6 +204,14 @@ try {
   console.error('Could not mount notices routes', e);
 }
 
+// mount success case routes (provides /api/success-cases search and admin import)
+try {
+  const successCaseRoutes = require('./routes/successCases');
+  app.use('/api', successCaseRoutes);
+} catch (e) {
+  console.error('Could not mount success case routes', e);
+}
+
 app.post('/api/gemini', authRequired, geminiRateLimit, async (req, res) => {
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const model = typeof req.body?.model === 'string' ? req.body.model.trim() : '';

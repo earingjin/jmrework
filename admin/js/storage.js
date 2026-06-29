@@ -110,6 +110,8 @@ async function loadData() {
     accounts: stripAccountSecrets(accounts),
     reports: [],
     notices: [],
+    successCases: [],
+    successCaseBatches: [],
     usageEvents,
     geminiErrors: [],
   };
@@ -167,4 +169,28 @@ async function loadNotices() {
   } catch {
     state.data.notices = [];
   }
+}
+
+async function loadSuccessCases() {
+  try {
+    const response = await authFetch("/api/success-cases/admin?limit=2000", { cache: "no-store" });
+    const data = await response.json().catch(() => null);
+    state.data.successCases = response.ok && Array.isArray(data?.cases) ? data.cases : [];
+  } catch {
+    state.data.successCases = [];
+  }
+}
+
+async function loadSuccessCaseBatches() {
+  try {
+    const response = await authFetch("/api/success-cases/import-batches", { cache: "no-store" });
+    const data = await response.json().catch(() => null);
+    state.data.successCaseBatches = response.ok && Array.isArray(data?.batches) ? data.batches : [];
+  } catch {
+    state.data.successCaseBatches = [];
+  }
+}
+
+async function loadSuccessCaseData() {
+  await Promise.all([loadSuccessCases(), loadSuccessCaseBatches()]);
 }
