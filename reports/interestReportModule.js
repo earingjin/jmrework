@@ -39,6 +39,10 @@ function renderPdfQuestions(items, limit) {
     : safeReportParagraph('');
 }
 
+function renderPdfQuestionRange(items, start, limit) {
+  return renderPdfQuestions((Array.isArray(items) ? items : []).slice(start, start + limit), limit);
+}
+
 function renderNoTargetJobReportSafe(r) {
   const pi = r.participantInfo || {};
   return `<div class="interest-report"><h1>${escapeHtml(pi.name || '내담자')} 직업선호도검사 리포트 (희망 직무 없음)</h1>
@@ -47,13 +51,16 @@ function renderNoTargetJobReportSafe(r) {
 <div class="summary-box"><p><strong>내담자:</strong> ${escapeHtml(pi.name || '내담자')}</p><p><strong>나이:</strong> ${escapeHtml(pi.age || '미입력')}</p><p><strong>학력:</strong> ${escapeHtml(pi.education || '미입력')}</p><p><strong>추천 직무군:</strong> ${escapeHtml(pi.recommendedJobGroup || '추천 직무는 추가 상담을 통해 보완 필요')}</p><p><strong>직업흥미검사 핵심 코드:</strong> ${escapeHtml(pi.coreCode || '미입력')}</p><p><strong>한 줄 강점 요약:</strong> ${escapeHtml(pi.strengthSummary || '추가 분석 필요')}</p></div>
 <h2>직업흥미·성격·생활사·전공·자격증 통합 피드백</h2>
 ${safeReportParagraph(r.integratedAnalysis)}
-<h2>강점 탐색 질문 5가지</h2>
-${renderPdfQuestions(r.strengthExplorationQuestions, 5)}
 <h2>검사 결과 기반 SWOT 분석</h2>
 ${renderPdfSwot(r.swot)}
 <div class="jobs-page"><h2>검사 결과 기반 추천 직업 5개</h2>${renderPdfJobTable(r.recommendedJobs)}</div>
-<h2>상담사용 코칭 질문 10가지</h2>
-${renderPdfQuestions(r.aiLifeQuestions, 10)}</div>`;
+<h2>상담사용 코칭 질문</h2>
+<h3>강점 탐색 질문 5가지</h3>
+${renderPdfQuestions(r.strengthExplorationQuestions, 5)}
+<h3>진로 설정 질문 5가지</h3>
+${renderPdfQuestionRange(r.aiLifeQuestions, 0, 5)}
+<h3>파생되는 2차 질문 5가지</h3>
+${renderPdfQuestionRange(r.aiLifeQuestions, 5, 5)}</div>`;
 }
 
 function renderTargetInterestReportFromData(r) {
@@ -64,12 +71,11 @@ function renderTargetInterestReportFromData(r) {
 <div class="summary-box"><p><strong>내담자:</strong> ${escapeHtml(pi.name || '내담자')}</p><p><strong>나이:</strong> ${escapeHtml(pi.age || '미입력')}</p><p><strong>학력:</strong> ${escapeHtml(pi.education || '미입력')}</p><p><strong>희망직무:</strong> ${escapeHtml(pi.targetJob || '미입력')}</p><p><strong>직업흥미검사 핵심 코드:</strong> ${escapeHtml(pi.coreCode || '미입력')}</p><p><strong>한 줄 강점 요약:</strong> ${escapeHtml(pi.strengthSummary || '추가 분석 필요')}</p></div>
 <h2>희망직무·검사 결과·전공 및 자격증에 대한 피드백</h2>
 ${safeReportParagraph(r.targetJobCompetencyAnalysis?.fitSummary)}
+${safeReportParagraph(r.integratedAnalysis)}
 <h2>희망직무와 검사 결과의 일치점</h2>
 ${safeReportList(r.targetJobCompetencyAnalysis?.matchingPoints)}
 <h2>보완 및 확인 과제</h2>
 ${safeReportList(r.targetJobCompetencyAnalysis?.gaps)}
-<h2>직업흥미·성격·생활사 통합 피드백</h2>
-${safeReportParagraph(r.integratedAnalysis)}
 <h2>검사 결과 기반 SWOT 분석</h2>
 ${renderPdfSwot(r.swot)}
 <div class="jobs-page"><h2>검사 결과 기반 추천 직업 5개</h2>${renderPdfJobTable(r.recommendedJobs)}</div>
@@ -77,10 +83,13 @@ ${renderPdfSwot(r.swot)}
 ${safeReportParagraph(r.demographicOutlook)}
 <h2>AI·디지털 전환 시대의 전망</h2>
 ${safeReportParagraph(r.digitalTransformationOutlook)}
-<h2>총평 및 내담자 맞춤형 전략</h2>
+<h2>내담자 맞춤형 전략 설계</h2>
 ${safeReportParagraph(r.finalStrategy)}
-<h2>상담사용 코칭 질문 10가지</h2>
-${renderPdfQuestions(r.coachingQuestions, 10)}</div>`;
+<h2>상담사용 코칭 질문</h2>
+<h3>강점 탐색 질문 5가지</h3>
+${renderPdfQuestionRange(r.coachingQuestions, 0, 5)}
+<h3>전략 설계 질문 5가지</h3>
+${renderPdfQuestionRange(r.coachingQuestions, 5, 5)}</div>`;
 }
 
 function interestFieldId(groupKey,label,suffix='score'){return `interest_${groupKey}_${label.replace(/\s+/g,'_')}_${suffix}`}
@@ -134,7 +143,7 @@ function toggleInterestCollapse(id){const body=document.getElementById(id);const
 function interestNumberFieldValue(groupKey,label,suffix='score',placeholder='점수',value=''){const id=interestFieldId(groupKey,label,suffix);return `<div class="field score-cell"><label>${escapeHtml(label)}</label><input id="${id}" type="number" inputmode="numeric" step="1" value="${escapeHtml(value)}" placeholder="${placeholder}"></div>`}
 function interestScoreGroupHtml(group){return `<div class="interest-subgroup"><h4>${escapeHtml(group.title)}</h4><div class="score-grid">${group.items.map(label=>interestNumberField(group.key,label)).join('')}</div></div>`}
 function interestReliabilityHtml(){return `<div class="interest-subgroup"><h4>2-6. 응답 신뢰성 점수</h4><div class="grid-2"><div class="score-grid">${interestNumberField('reliability','사회적 바람직성','score','점수')}${interestNumberFieldValue('reliability','사회적 바람직성','criterion','기준점수','65')}</div><div class="score-grid">${interestNumberField('reliability','부주의성','score','점수')}${interestNumberFieldValue('reliability','부주의성','criterion','기준점수','63')}</div></div></div>`}
-function interestManualForm(p){p=p||getParticipant()||{};const personalBody=`<div class="grid-3"><div class="field"><label>이름 *</label><input id="interestPersonName" value="${escapeHtml(p.name==='내담자'?'':p.name||'')}" placeholder="가명 가능 A"></div><div class="field"><label>나이 *</label><input id="interestPersonAge" type="number" inputmode="numeric" value="${Number.parseInt(p.age)||''}" placeholder="예: 45"></div><div class="field"><label>학력 *</label><input id="interestEducation" placeholder="예: 대졸"></div></div><div class="grid-2"><div class="field"><label>전공</label><input id="interestMajor"></div><div class="field"><label>자격증</label><input id="interestCerts" placeholder="예: 직업상담사, 컴활"></div></div>`;const interestBody=`<div class="score-grid">${INTEREST_MANUAL_GROUPS[0].items.map(label=>interestNumberField(INTEREST_MANUAL_GROUPS[0].key,label)).join('')}</div>`;const personalityBody=`${INTEREST_MANUAL_GROUPS.slice(1,6).map(interestScoreGroupHtml).join('')}${interestReliabilityHtml()}`;const lifeBody=`<div class="score-grid">${INTEREST_MANUAL_GROUPS[6].items.map(label=>interestNumberField(INTEREST_MANUAL_GROUPS[6].key,label)).join('')}</div>`;return `<div class="interest-ref"><div class="interest-ref-title">▣ 직업선호도검사 리포트</div><div class="interest-ref-body"><div class="job-api-box"><strong>흥미·성격·생활사 AI 통합 분석</strong><br>AI가 입력된 검사 결과를 근거로 분석합니다. 성격검사와 생활사검사는 비워두면 미입력으로 처리됩니다.</div>${interestCollapse('interestPersonalPanel','내담자 인적사항',personalBody,'이름, 나이, 학력은 필수입니다.',false)}${interestCollapse('interestRawPanel','직업흥미검사 결과 [필수]',interestBody,'원점수를 입력합니다.',false)}${interestCollapse('interestPersonalityPanel','성격검사 결과 [선택]',personalityBody,'입력하지 않으면 미입력으로 분석에 전달됩니다.',false)}${interestCollapse('interestLifePanel','생활사검사 결과 [선택]',lifeBody,'입력하지 않으면 미입력으로 분석에 전달됩니다.',false)}<div class="field"><label>희망 직무 여부 *</label><select id="interestHasTarget" onchange="toggleInterestTargetInput()"><option value="no" selected>없음 - 검사 결과 기반 추천</option><option value="yes">있음 - 희망 직무 입력</option></select></div><div class="field" id="interestTargetWrap" style="display:none"><label>희망 직무 *</label><input id="interestTarget" placeholder="예: 직업상담사"></div><div class="field"><label>참여자에게 연결할 시사점(선택)</label><div class="small">1. 참여자의 관심 분야, 이전 경력, 희망 근무 조건<br>2. 추천하지 않는 직업군 <br>(전공과 다른 분야를 희망하는 경우 등)<br>3. 자세하게 작성할수록 더 세분화된 직업 추천 가능</div><textarea id="interestMemo" placeholder=""></textarea></div><button id="interestButton" class="btn full" onclick="generateReport('interest')">직업선호도검사 분석 리포트 생성</button></div></div>`}
+function interestManualForm(p){p=p||getParticipant()||{};const personalBody=`<div class="grid-3"><div class="field"><label>이름 *</label><input id="interestPersonName" value="${escapeHtml(p.name==='내담자'?'':p.name||'')}" placeholder="가명 A"></div><div class="field"><label>나이 *</label><input id="interestPersonAge" type="number" inputmode="numeric" value="${Number.parseInt(p.age)||''}" placeholder="예: 45"></div><div class="field"><label>학력 *</label><input id="interestEducation" placeholder="예: 대졸"></div></div><div class="grid-2"><div class="field"><label>전공</label><input id="interestMajor"></div><div class="field"><label>자격증</label><input id="interestCerts" placeholder="예: 직업상담사, 컴활"></div></div>`;const interestBody=`<div class="score-grid">${INTEREST_MANUAL_GROUPS[0].items.map(label=>interestNumberField(INTEREST_MANUAL_GROUPS[0].key,label)).join('')}</div>`;const personalityBody=`${INTEREST_MANUAL_GROUPS.slice(1,6).map(interestScoreGroupHtml).join('')}${interestReliabilityHtml()}`;const lifeBody=`<div class="score-grid">${INTEREST_MANUAL_GROUPS[6].items.map(label=>interestNumberField(INTEREST_MANUAL_GROUPS[6].key,label)).join('')}</div>`;return `<div class="interest-ref"><div class="interest-ref-title">▣ 직업선호도검사 리포트</div><div class="interest-ref-body"><div class="job-api-box"><strong>흥미·성격·생활사 AI 통합 분석</strong><br>참여자에게 연결할 시사점을 자세하게 입력할수록, 더 세분화된 직업 추천 및 맞춤 분석이 가능합니다.</div>${interestCollapse('interestPersonalPanel','내담자 인적사항',personalBody,'이름, 나이, 학력은 필수입니다.',false)}${interestCollapse('interestRawPanel','직업흥미검사 결과 [필수]',interestBody,'원점수를 입력합니다.',false)}${interestCollapse('interestPersonalityPanel','성격검사 결과 [선택]',personalityBody,'입력하지 않으면 미입력으로 분석에 전달됩니다.',false)}${interestCollapse('interestLifePanel','생활사검사 결과 [선택]',lifeBody,'입력하지 않으면 미입력으로 분석에 전달됩니다.',false)}<div class="field"><label>희망 직무 여부 *</label><select id="interestHasTarget" onchange="toggleInterestTargetInput()"><option value="no" selected>없음 - 검사 결과 기반 추천</option><option value="yes">있음 - 희망 직무 입력</option></select></div><div class="field" id="interestTargetWrap" style="display:none"><label>희망 직무 *</label><input id="interestTarget" placeholder="예: 직업상담사"></div><div class="field"><label>참여자에게 연결할 시사점</label><div class="small">1. 참여자의 관심 분야, 이전 경력, 희망 근무 조건<br>2. 추천하지 않는 직업군 <br>(전공과 다른 분야를 희망하는 경우 등)<br>3. 자세하게 작성할수록 더 세분화된 직업 추천 가능</div><textarea id="interestMemo" placeholder=""></textarea></div><button id="interestButton" class="btn full" onclick="generateReport('interest')">직업선호도검사 분석 리포트 생성</button></div></div>`}
 function requiredInterestText(id,label){const text=val(id);if(!text)throw new Error(label+'을(를) 입력해주세요.');return text}
 function optionalInterestText(id){return val(id)||''}
 function requiredInterestNumber(id,label){const text=val(id);if(text==='')throw new Error(label+' 점수를 입력해주세요.');const num=Number(text);if(!Number.isFinite(num))throw new Error(label+'에는 숫자만 입력해주세요.');return num}

@@ -34,7 +34,7 @@ function dashboardNoticeBoardHtml() {
     return `<button type="button" class="dashboard-notice-row" onclick="openNotice('${escapeHtml(notice.id)}')"><span>${pinned}${escapeHtml(notice.title)}</span><small>${escapeHtml(date)}</small></button>`;
   }).join('');
   const body = rows || '<div class="dashboard-notice-empty">게시된 공지사항이 없습니다.</div>';
-  return `<div class="workspace-block dashboard-notice-board"><div class="workspace-head"><div><h3><span class="dashboard-notice-icon">${workspaceIcon('draft')}</span>공지사항</h3><p>관리자가 공유한 최신 안내를 확인하세요.</p></div><button type="button" class="dashboard-notice-refresh" onclick="reloadNotices()">새로고침</button></div><div class="dashboard-notice-list">${body}</div></div>`;
+  return `<div class="workspace-block dashboard-notice-board"><div class="workspace-head"><div><button type="button" class="dashboard-notice-title-button" onclick="openNoticeList()"><span class="dashboard-notice-icon">${workspaceIcon('draft')}</span><span>공지사항</span></button><p>관리자가 공유한 최신 안내를 확인하세요.</p></div><button type="button" class="dashboard-notice-refresh" onclick="reloadNotices()">새로고침</button></div><div class="dashboard-notice-list">${body}</div></div>`;
 }
 
 function dashboardSection() {

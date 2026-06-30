@@ -65,7 +65,7 @@ router.get('/notices/public', async (_req, res) => {
   try {
     if (!db.enabled) return res.json({ notices: [] });
     const result = await db.query(
-      `SELECT id,title,status,pinned,created_at,updated_at
+      `SELECT id,title,content,status,pinned,created_at,updated_at
        FROM notices
        WHERE status = $1
        ORDER BY pinned DESC, created_at DESC

@@ -78,12 +78,52 @@ function landingNoticeBoardHtml() {
       </div>
       <div class="landing-notice-list">
         ${notices.length ? notices.map((notice) => `
-          <div class="landing-notice-row">
+          <button type="button" class="landing-notice-row" onclick="openLandingNotice('${escapeHtml(notice.id)}')">
             <span>${notice.pinned ? '[고정] ' : ''}${escapeHtml(notice.title)}</span>
             <small>${escapeHtml(landingNoticeDateText(notice.updatedAt || notice.createdAt))}</small>
-          </div>`).join('') : '<div class="landing-notice-empty">등록된 공지사항이 없습니다.</div>'}
+          </button>`).join('') : '<div class="landing-notice-empty">등록된 공지사항이 없습니다.</div>'}
       </div>
     </section>`;
+}
+
+function landingNoticeModalHtml() {
+  return `
+    <div id="landingNoticeModal" class="landing-notice-modal hidden" role="dialog" aria-modal="true" aria-labelledby="landingNoticeModalTitle" onclick="if(event.target===this)closeLandingNotice()">
+      <article class="landing-notice-dialog">
+        <button type="button" class="landing-notice-close" aria-label="공지사항 닫기" onclick="closeLandingNotice()">×</button>
+        <div class="landing-notice-dialog-head">
+          <span>공지사항</span>
+          <h3 id="landingNoticeModalTitle"></h3>
+          <small id="landingNoticeModalDate"></small>
+        </div>
+        <div id="landingNoticeModalContent" class="landing-notice-dialog-content"></div>
+      </article>
+    </div>`;
+}
+
+function landingNoticeById(id) {
+  return (Array.isArray(state.data.notices) ? state.data.notices : []).find((notice) => String(notice.id) === String(id));
+}
+
+function openLandingNotice(id) {
+  const notice = landingNoticeById(id);
+  if (!notice) return;
+  const modal = document.getElementById('landingNoticeModal');
+  const title = document.getElementById('landingNoticeModalTitle');
+  const date = document.getElementById('landingNoticeModalDate');
+  const content = document.getElementById('landingNoticeModalContent');
+  if (!modal || !title || !date || !content) return;
+  title.textContent = `${notice.pinned ? '[고정] ' : ''}${notice.title || ''}`;
+  date.textContent = landingNoticeDateText(notice.updatedAt || notice.createdAt);
+  content.innerHTML = escapeHtml(notice.content || '').replace(/\r?\n/g, '<br>');
+  modal.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+}
+
+function closeLandingNotice() {
+  const modal = document.getElementById('landingNoticeModal');
+  if (modal) modal.classList.add('hidden');
+  document.body.classList.remove('modal-open');
 }
 
 function landingTemplate() {
@@ -150,5 +190,9 @@ function landingTemplate() {
         ${content.footer.description}
         <div class="landing-copyright">© 2026 JM Career. All Rights Reserved.</div>
       </footer>
+      ${landingNoticeModalHtml()}
     </div>`;
 }
+
+window.openLandingNotice = openLandingNotice;
+window.closeLandingNotice = closeLandingNotice;

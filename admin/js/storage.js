@@ -2,6 +2,7 @@ const LEGACY_STORAGE_KEY = "ai_career_report_index_v2";
 const ACCOUNT_STORAGE_KEY = "ai_career_accounts_v1";
 const USAGE_EVENT_STORAGE_KEY = "ai_career_usage_events_v1";
 const AUTH_TOKEN_KEY = "REWORK_AUTH_TOKEN";
+const NOTICES_CACHE_KEY = "rework_admin_notices_cache_v1";
 
 function authHeaders(headers = {}) {
   const token = localStorage.getItem(AUTH_TOKEN_KEY) || "";
@@ -162,12 +163,19 @@ async function loadGeminiErrors() {
 }
 
 async function loadNotices() {
+  const cachedNotices = parseStorage(NOTICES_CACHE_KEY);
+  if (Array.isArray(cachedNotices) && !state.data.notices.length) {
+    state.data.notices = cachedNotices;
+  }
   try {
     const response = await authFetch("/api/notices/admin", { cache: "no-store" });
     const data = await response.json().catch(() => null);
-    state.data.notices = response.ok && Array.isArray(data?.notices) ? data.notices : [];
+    if (response.ok && Array.isArray(data?.notices)) {
+      state.data.notices = data.notices;
+      localStorage.setItem(NOTICES_CACHE_KEY, JSON.stringify(data.notices));
+    }
   } catch {
-    state.data.notices = [];
+    if (!Array.isArray(state.data.notices)) state.data.notices = [];
   }
 }
 

@@ -21,7 +21,16 @@ function sortedPublishedNotices() {
 
 function selectedNotice() {
   const notices = sortedPublishedNotices();
-  return notices.find((notice) => notice.id === state.selectedNoticeId) || notices[0] || null;
+  return notices.find((notice) => notice.id === state.selectedNoticeId) || null;
+}
+
+function openNoticeList() {
+  if (state.active !== 'notices' || state.selectedNoticeId) pushHistory();
+  state.active = 'notices';
+  state.selectedNoticeId = null;
+  state.currentReport = null;
+  state.editMode = false;
+  render();
 }
 
 function openNotice(id) {
@@ -43,29 +52,35 @@ function noticesSection() {
   const notices = sortedPublishedNotices();
   const notice = selectedNotice();
   const actions = '<button class="btn secondary" onclick="reloadNotices()">새로고침</button>';
-  if (!notice) {
+  if (!notices.length) {
     return `<section id="section-notices" class="section">${pageTitle('공지사항', '관리자가 게시한 공지사항을 확인합니다.', actions)}<div class="empty">게시된 공지사항이 없습니다.</div></section>`;
   }
   const listRows = notices
-    .map((item) => `<button class="${item.id === notice.id ? 'active' : ''}" onclick="openNotice('${escapeHtml(item.id)}')"><span>${item.pinned ? '[고정] ' : ''}${escapeHtml(item.title)}</span><span>${escapeHtml(noticeDateText(item.updatedAt || item.createdAt))}</span></button>`)
+    .map((item) => `<button class="${notice && item.id === notice.id ? 'active' : ''}" onclick="openNotice('${escapeHtml(item.id)}')"><span>${item.pinned ? '[고정] ' : ''}${escapeHtml(item.title)}</span><span>${escapeHtml(noticeDateText(item.updatedAt || item.createdAt))}</span></button>`)
     .join('');
-  return `
-    <section id="section-notices" class="section">
-      ${pageTitle('공지사항', '관리자가 게시한 공지사항을 확인합니다.', actions)}
-      <div class="notice-layout">
-        <aside class="notice-list-panel no-print">
-          <h3>공지 목록</h3>
-          <div class="notice-list">${listRows}</div>
-        </aside>
-        <article class="panel notice-detail-panel">
+  const detailHtml = notice
+    ? `<article class="panel notice-detail-panel">
           <div class="panel-head">
             <div>
               <h3>${notice.pinned ? '[고정] ' : ''}${escapeHtml(notice.title)}</h3>
               <span class="small">${escapeHtml(noticeDateText(notice.updatedAt || notice.createdAt))}</span>
             </div>
+            <button type="button" class="btn secondary" onclick="openNoticeList()">목록으로 돌아가기</button>
           </div>
           <div class="panel-body notice-content">${noticeBodyHtml(notice.content)}</div>
-        </article>
+        </article>`
+    : '';
+  return `
+    <section id="section-notices" class="section">
+      ${pageTitle('공지사항', '관리자가 게시한 공지사항을 확인합니다.', actions)}
+      <div class="notice-layout ${notice ? '' : 'notice-layout-list-only'}">
+        <aside class="notice-list-panel no-print">
+          <h3>공지 목록</h3>
+          <div class="notice-list">${listRows}</div>
+        </aside>
+        ${detailHtml}
       </div>
     </section>`;
 }
+
+window.openNoticeList = openNoticeList;

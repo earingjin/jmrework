@@ -119,6 +119,8 @@ async function saveNotice() {
     const index = state.data.notices.findIndex((item) => item.id === notice.id);
     if (index >= 0) state.data.notices[index] = notice;
     else state.data.notices.unshift(notice);
+    localStorage.setItem(NOTICES_CACHE_KEY, JSON.stringify(state.data.notices));
+    await loadNotices();
     resetNoticeForm();
     toast("공지사항이 저장되었습니다.");
     return true;
@@ -162,6 +164,8 @@ async function deleteNotice(id) {
       return false;
     }
     state.data.notices = state.data.notices.filter((item) => item.id !== id);
+    localStorage.setItem(NOTICES_CACHE_KEY, JSON.stringify(state.data.notices));
+    await loadNotices();
     toast("공지사항이 삭제되었습니다.");
     return true;
   } catch (err) {

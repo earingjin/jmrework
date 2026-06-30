@@ -75,8 +75,9 @@ SUCCESS_CASE_SEARCH_ASSIST.ui = {
   certOutlook: '급여·처우 / 전망',
   sourceField: '출처문구',
   sourceLabel: '출처',
-  selectionNotice: '보고 싶은 성공사례를 1개 이상 선택한 뒤 상담지원 리포트를 생성하세요. 선택 개수 제한은 없습니다.',
+  selectionNotice: '보고 싶은 성공사례를 1개 이상, 최대 3개까지 선택한 뒤 상담지원 리포트를 생성하세요.',
   needSelect: '상담지원 리포트에 포함할 성공사례를 1개 이상 선택해주세요.',
+  maxSelect: '성공사례는 최대 3개까지 선택할 수 있습니다.',
   missingSelected: '선택한 성공사례를 현재 검색 결과에서 찾을 수 없습니다. 다시 검색 후 선택해주세요.',
   selectedCount: '건 선택'
 };

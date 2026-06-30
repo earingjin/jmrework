@@ -12,13 +12,27 @@
       String(err?.message || '').includes('JSON');
   }
 
+  function isLightJsonParseStage(stage = '') {
+    const text = String(stage || '');
+    return text === 'raw' ||
+      text.startsWith('code_fence_removed') ||
+      text.startsWith('fence_markers_removed') ||
+      text.startsWith('json_object_extracted') ||
+      text.startsWith('balanced_segment') ||
+      text.includes('trailing_commas_removed') ||
+      text.includes('whitespace_normalized') ||
+      text.includes('smart_quotes_normalized') ||
+      text.includes('control_chars_removed');
+  }
+
   function reportJsonRuntimeIssue(detail = {}) {
     if (!window.noteReportGenerationIssue) return;
+    const autoRepairAttempted = detail.autoRepairAttempted && !isLightJsonParseStage(detail.parseStage);
     const recoveryType = detail.regenerateAttempted
       ? REPORT_RECOVERY_TYPE.FULL_REGENERATION
       : detail.jsonRepairAttempted
         ? REPORT_RECOVERY_TYPE.AI_JSON_REPAIR
-        : detail.autoRepairAttempted
+        : autoRepairAttempted
           ? REPORT_RECOVERY_TYPE.CODE_REPAIR
           : REPORT_RECOVERY_TYPE.NONE;
     const errorType = detail.parseSuccess === false
@@ -94,6 +108,7 @@
       reportJsonRuntimeIssue({
         modelName,
         parseSuccess: true,
+        parseStage: result.stage,
         autoRepairAttempted: result.autoRepairAttempted,
         autoRepairSuccess: result.autoRepairSuccess,
         jsonRepairAttempted: false,
@@ -130,6 +145,7 @@
         reportJsonRuntimeIssue({
           modelName,
           parseSuccess: true,
+          parseStage: repaired.stage,
           autoRepairAttempted: repaired.autoRepairAttempted,
           autoRepairSuccess: repaired.autoRepairSuccess,
           jsonRepairAttempted: true,
