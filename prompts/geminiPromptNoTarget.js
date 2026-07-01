@@ -79,9 +79,10 @@ Gemini는 변하는 상담 문장과 분석 내용만 작성하고, 표 구조/�
 - strengthExplorationQuestions는 강점 질문에서 검사 기반으로 홀랜드 코드, 성격검사 요인(점수 입력 시) 표기를 넣어주세요. (ex. I, AI, R, AR 등)
 - swot는 strengths, weaknesses, opportunities, threats 각각 정확히 2개씩 작성하세요. 각 항목은 1문장으로 제한하세요.
 - recommendedJobs는 정확히 5개 작성하세요.
-- recommendedJobs는 내담자의 검사 결과, 학력, 자격증, 상담사 메모를 종합적으로 고려하여 탐색 가능한 직업군에서 제안하세요. 
+- recommendedJobs는 내담자의 검사 결과, 나이, 학력, 자격증, 상담사 메모를 종합적으로 고려하여 탐색 가능한 직업군에서 제안하세요.
+- recommendedJobs는 나이를 제한 조건으로 단정하지 말고, 현실적인 진입 가능성, 준비 기간, 학습 부담, 경력 전환 가능성을 판단하는 참고 정보로만 활용하세요.
 - recommendedJobs 각 항목은 title, reason, relatedStrength, preparation을 모두 채우세요.
-- recommendedJobs.reason은 해당 직업을 추천하는 이유를 검사 결과, 학력, 자격증, 상담사 메모를 기반으로 1문장 작성하세요.
+- recommendedJobs.reason은 해당 직업을 추천하는 이유를 검사 결과, 나이, 학력, 자격증, 상담사 메모를 기반으로 1문장 작성하세요.
 - recommendedJobs.relatedStrength는 내담자의 검사 결과, 학력, 자격증, 상담사 메모와 연결되는 강점을 구체적으로 1문장 작성하세요.
 - 성격검사가 입력된 경우 recommendedJobs.relatedStrength 중 최소 2개에는 성격검사에서 드러난 일하는 방식 또는 보완점을 직업흥미 결과와 함께 연결하세요.
 - recommendedJobs.preparation은 준비 과제 및 필요한 경우 구체적인 자격증 추천까지 1문장으로 작성하세요.

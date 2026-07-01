@@ -21,7 +21,18 @@ function normalizeNoTargetJobReportDataAligned(raw,input={}){
   normalized.recommendedJobs=safeRecommendedJobs(normalized.recommendedJobs);
   return normalized;
 }
-function normalizeTargetInterestReportData(raw,input,target){const r=raw||{};const p=input?.personalInfo||{};const cleanArray=value=>Array.isArray(value)?value.map(item=>String(item||'').trim()).filter(Boolean):[];const normalized={participantInfo:{name:p.name||'',age:p.age||'',education:p.education||'',targetJob:target||r.participantInfo?.targetJob||'',coreCode:r.participantInfo?.coreCode||interestCoreCodeFromData(input),strengthSummary:r.participantInfo?.strengthSummary||''},targetJobCompetencyAnalysis:{fitSummary:String(r.targetJobCompetencyAnalysis?.fitSummary||''),matchingPoints:cleanArray(r.targetJobCompetencyAnalysis?.matchingPoints).slice(0,3),gaps:cleanArray(r.targetJobCompetencyAnalysis?.gaps).slice(0,3)},swot:{strengths:cleanArray(r.swot?.strengths).slice(0,2),weaknesses:cleanArray(r.swot?.weaknesses).slice(0,2),opportunities:cleanArray(r.swot?.opportunities).slice(0,2),threats:cleanArray(r.swot?.threats).slice(0,2)},recommendedJobs:Array.isArray(r.recommendedJobs)?r.recommendedJobs:[],demographicOutlook:String(r.demographicOutlook||''),digitalTransformationOutlook:String(r.digitalTransformationOutlook||''),finalStrategy:String(r.finalStrategy||''),coachingQuestions:cleanArray(r.coachingQuestions).slice(0,10)};normalized.recommendedJobs=normalized.recommendedJobs.slice(0,5).map(job=>({title:job.title||job.job||'',reason:job.reason||'',relatedStrength:job.relatedStrength||job.strength||'',preparation:job.preparation||job.prep||'관련 채용공고를 비교하고 필요한 역량을 확인합니다.'}));return normalized}
+function normalizeTargetFinalStrategy(value) {
+  const cleanArray = items => Array.isArray(items) ? items.map(item => String(item || '').trim()).filter(Boolean).slice(0, 2) : [];
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return {
+      jobInfoExploration: cleanArray(value.jobInfoExploration),
+      competencyPreparation: cleanArray(value.competencyPreparation),
+      applicationReview: cleanArray(value.applicationReview)
+    };
+  }
+  return String(value || '');
+}
+function normalizeTargetInterestReportData(raw,input,target){const r=raw||{};const p=input?.personalInfo||{};const cleanArray=value=>Array.isArray(value)?value.map(item=>String(item||'').trim()).filter(Boolean):[];const normalized={participantInfo:{name:p.name||'',age:p.age||'',education:p.education||'',targetJob:target||r.participantInfo?.targetJob||'',coreCode:r.participantInfo?.coreCode||interestCoreCodeFromData(input),strengthSummary:r.participantInfo?.strengthSummary||''},targetJobCompetencyAnalysis:{fitSummary:String(r.targetJobCompetencyAnalysis?.fitSummary||''),matchingPoints:cleanArray(r.targetJobCompetencyAnalysis?.matchingPoints).slice(0,3),gaps:cleanArray(r.targetJobCompetencyAnalysis?.gaps).slice(0,3)},swot:{strengths:cleanArray(r.swot?.strengths).slice(0,2),weaknesses:cleanArray(r.swot?.weaknesses).slice(0,2),opportunities:cleanArray(r.swot?.opportunities).slice(0,2),threats:cleanArray(r.swot?.threats).slice(0,2)},recommendedJobs:Array.isArray(r.recommendedJobs)?r.recommendedJobs:[],demographicOutlook:String(r.demographicOutlook||''),digitalTransformationOutlook:String(r.digitalTransformationOutlook||''),finalStrategy:normalizeTargetFinalStrategy(r.finalStrategy),coachingQuestions:cleanArray(r.coachingQuestions).slice(0,10)};normalized.recommendedJobs=normalized.recommendedJobs.slice(0,5).map(job=>({title:job.title||job.job||'',reason:job.reason||'',relatedStrength:job.relatedStrength||job.strength||'',preparation:job.preparation||job.prep||'관련 채용공고를 비교하고 필요한 역량을 확인합니다.'}));return normalized}
 function renderPdfSwot(swot={}) {
   return `<table><tbody><tr><th>Strengths 강점</th><th>Weaknesses 보완점</th></tr><tr><td>${safeReportList(swot.strengths)}</td><td>${safeReportList(swot.weaknesses)}</td></tr><tr><th>Opportunities 기회</th><th>Threats 위협</th></tr><tr><td>${safeReportList(swot.opportunities)}</td><td>${safeReportList(swot.threats)}</td></tr></tbody></table>`;
 }
@@ -71,6 +82,18 @@ function renderNoTargetIntegratedAnalysis(value) {
 }
 
 function renderActionStrategy(value) {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const steps = [
+      ['1단계: 직무 정보 탐색', value.jobInfoExploration],
+      ['2단계: 역량 준비', value.competencyPreparation],
+      ['3단계: 지원 실행 및 점검', value.applicationReview]
+    ];
+    const body = steps.map(([title, items]) => {
+      const actions = Array.isArray(items) ? items.map(item => String(item || '').trim()).filter(Boolean).slice(0, 2) : [];
+      return `<h4>${escapeHtml(title)}</h4>${actions.length ? `<ul>${actions.map(action => `<li>${escapeHtml(action)}</li>`).join('')}</ul>` : safeReportParagraph('')}`;
+    }).join('');
+    return `<div class="action-strategy">${body}</div>`;
+  }
   const lines = String(value || '')
     .split(/\n+/)
     .map(line => line.trim())
@@ -104,11 +127,8 @@ function renderTargetFitSummary(value) {
     .map(line => line.trim().replace(/^\d+\.\s*/, ''))
     .filter(Boolean);
   if (!lines.length) return safeReportParagraph('');
-  const body = lines
-    .filter(line => !sectionTitles.has(line))
-    .map(line => `<p>${escapeHtml(line)}</p>`)
-    .join('');
-  return renderReportSubsection('직무 환경 적합성', `<div class="target-fit-summary">${body}</div>`);
+  const body = `<p>${escapeHtml(limitReportSentences(lines.filter(line => !sectionTitles.has(line)).join(' '), 3))}</p>`;
+  return renderReportSubsection('직무 환경과의 적합성', `<div class="target-fit-summary">${body}</div>`);
 }
 
 function renderNoTargetJobReportSafe(r) {
@@ -139,8 +159,8 @@ function renderTargetInterestReportFromData(r) {
 <h2>희망직무·검사 결과·전공 및 자격증에 대한 종합 피드백</h2>
 ${renderReportSectionBox(
   renderTargetFitSummary(r.targetJobCompetencyAnalysis?.fitSummary) +
-  renderReportSubsection('희망직무와 검사 결과의 일치점', safeReportList(r.targetJobCompetencyAnalysis?.matchingPoints)) +
-  renderReportSubsection('보완 및 확인 과제', safeReportList(r.targetJobCompetencyAnalysis?.gaps))
+  renderReportSubsection('희망직무와 검사 결과의 일치점', safeReportParagraphFromItems(r.targetJobCompetencyAnalysis?.matchingPoints)) +
+  renderReportSubsection('보완 및 확인 과제', safeReportParagraphFromItems(r.targetJobCompetencyAnalysis?.gaps))
 )}
 <h2>3단계 실행 전략</h2>
 ${renderReportSectionBox(renderActionStrategy(r.finalStrategy), 'report-section-box-strategy')}
@@ -175,13 +195,15 @@ function noTargetGeminiUserPrompt(input){return GEMINI_NO_TARGET_INTEREST_PROMPT
 function safeReportText(value,empty='추가 분석 필요'){return String(value||'').trim()||empty}
 function safeReportParagraph(value,empty='추가 분석 필요'){return String(value||'').split(/\n+/).map(x=>x.trim()).filter(Boolean).map(x=>`<p>${escapeHtml(x)}</p>`).join('')||`<p>${escapeHtml(empty)}</p>`}
 function safeReportList(items,empty='추가 분석 필요'){const values=Array.isArray(items)?items.map(item=>typeof item==='string'?item:item?.question||item?.text||'').map(item=>String(item||'').trim()).filter(Boolean):[];return values.length?`<ul>${values.map(item=>`<li>${escapeHtml(item)}</li>`).join('')}</ul>`:`<p>${escapeHtml(empty)}</p>`}
+function limitReportSentences(value,max=3){const text=String(value||'').replace(/\s+/g,' ').trim();if(!text)return'';const sentences=text.match(/[^.!?。！？\n]+[.!?。！？]?/g)||[text];return sentences.map(sentence=>sentence.trim()).filter(Boolean).slice(0,max).join(' ')}
+function safeReportParagraphFromItems(items,empty='추가 분석 필요'){const values=Array.isArray(items)?items.map(item=>typeof item==='string'?item:item?.question||item?.text||'').map(item=>String(item||'').trim()).filter(Boolean):[];return values.length?`<p>${escapeHtml(limitReportSentences(values.join(' '),3))}</p>`:safeReportParagraph(items,empty)}
 function safeReportSwotCell(items){const values=Array.isArray(items)?items.map(item=>String(item||'').trim()).filter(Boolean):[];return values.length?values.map(escapeHtml).join('<br>'):escapeHtml('추가 분석 필요')}
 function safeRecommendedJobs(items,limit=5){return(Array.isArray(items)?items:[]).slice(0,limit).map(job=>job&&typeof job==='object'?job:{title:String(job||'')}).filter(job=>String(job.title||job.job||'').trim())}
 function averageInputScore(group){return hasInterestValues(group)?noTargetAverageGroup(group):''}
 function noTargetPersonalityScoresFromInput(personality){if(!hasInterestValues(personality))return{};return{extroversion:averageInputScore(personality.extraversion),agreeableness:averageInputScore(personality.agreeableness),conscientiousness:averageInputScore(personality.conscientiousness),emotionalInstability:averageInputScore(personality.emotionalInstability),openness:averageInputScore(personality.openness)}}
 function noTargetLifeScoresFromInput(life){if(!hasInterestValues(life))return{};return{relationship:life['대인관계']??'',independence:life['독립심']??'',family:life['가족친화']??'',ambition:life['야망']??'',academicAchievement:life['학업성취']??'',artistry:life['예술성']??'',sports:life['운동선호']??'',religion:life['종교성']??'',jobSatisfaction:life['직무만족']??''}}
 function noTargetCoreCodeFromInput(input){return interestCoreCodeFromData(input).split(' ')[0]||''}
-function interestJsonSchemaForRepair(kind){const common={participantInfo:'object',swot:{strengths:'string[]',weaknesses:'string[]',opportunities:'string[]',threats:'string[]'},recommendedJobs:[{title:'string',reason:'string',relatedStrength:'string',preparation:'string'}]};return kind==='target'?{...common,targetJobCompetencyAnalysis:{fitSummary:'string',matchingPoints:'string[]',gaps:'string[]'},demographicOutlook:'string',digitalTransformationOutlook:'string',finalStrategy:'string',coachingQuestions:'string[]'}:{...common,integratedAnalysis:{strengthDirection:'string',cautionEnvironment:'string',explorationCriteria:'string'},interestSummary:{shapeAnalysis:'string',counselorReferenceType:'string'},personalitySummary:'string',lifeHistorySummary:'string',strengthExplorationQuestions:'string[]',aiLifeQuestions:[{question:'string',intent:'string',counselorUse:'string'}]}}
+function interestJsonSchemaForRepair(kind){const common={participantInfo:'object',swot:{strengths:'string[]',weaknesses:'string[]',opportunities:'string[]',threats:'string[]'},recommendedJobs:[{title:'string',reason:'string',relatedStrength:'string',preparation:'string'}]};return kind==='target'?{...common,targetJobCompetencyAnalysis:{fitSummary:'string',matchingPoints:'string[]',gaps:'string[]'},demographicOutlook:'string',digitalTransformationOutlook:'string',finalStrategy:{jobInfoExploration:'string[]',competencyPreparation:'string[]',applicationReview:'string[]'},coachingQuestions:'string[]'}:{...common,integratedAnalysis:{strengthDirection:'string',cautionEnvironment:'string',explorationCriteria:'string'},interestSummary:{shapeAnalysis:'string',counselorReferenceType:'string'},personalitySummary:'string',lifeHistorySummary:'string',strengthExplorationQuestions:'string[]',aiLifeQuestions:[{question:'string',intent:'string',counselorUse:'string'}]}}
 async function requestGeminiNoTargetJobReportData(input,options={}){const modelName=getGeminiModel('interest');const body={system_instruction:{parts:[{text:noTargetGeminiSystemInstruction()}]},contents:[{role:'user',parts:[{text:noTargetGeminiUserPrompt(input)}]}],generationConfig:{temperature:.12,topP:.65,responseMimeType:'application/json'}};const result=await generateJsonWithRecovery({reportType:'interest',modelScope:'interest',modelName,body,schema:interestJsonSchemaForRepair('noTarget'),context:'직업선호도검사 희망직무 없음',allowJsonRepair:options.allowJsonRepair!==false,request:({body})=>fetchGeminiInterestWithModelFallback(body)});return{...normalizeNoTargetJobReportDataAligned(result.json,input),tokenUsage:result.tokenUsage}}
 async function generateNoTargetJobInterestReport(p){
   const btn=document.getElementById('interestButton');
