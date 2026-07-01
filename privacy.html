@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>개인정보처리방침 | RE:WORK CENTER</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background: #f4f6f8; }
+    .privacy-page { max-width: 980px; margin: 0 auto; padding: 56px 22px 80px; }
+    .privacy-card { background: #fff; border: 1px solid #d9e1ea; border-radius: 12px; box-shadow: 0 14px 34px rgba(15,39,66,.06); overflow: hidden; }
+    .privacy-head { padding: 34px 36px; background: #0f2742; color: #fff; }
+    .privacy-head a { display: inline-flex; margin-bottom: 18px; color: #d9e5f2; font-size: 13px; font-weight: 800; }
+    .privacy-head h1 { margin: 0 0 10px; color: #fff; font-size: 32px; letter-spacing: 0; }
+    .privacy-head p { margin: 0; color: #d9e5f2; line-height: 1.7; }
+    .privacy-body { padding: 34px 36px 40px; color: #344054; font-size: 15px; line-height: 1.8; }
+    .privacy-body h2 { margin: 30px 0 10px; color: #0f2742; font-size: 20px; letter-spacing: 0; }
+    .privacy-body h2:first-child { margin-top: 0; }
+    .privacy-body p { margin: 8px 0; }
+    .privacy-body ul { margin: 8px 0 14px 20px; padding: 0; }
+    .privacy-body li { margin: 4px 0; }
+    .privacy-table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; background: #fff; }
+    .privacy-table th, .privacy-table td { border: 1px solid #d9e1ea; padding: 11px 12px; vertical-align: top; text-align: left; font-size: 14px; }
+    .privacy-table th { width: 28%; background: #f3f7fb; color: #0f2742; font-weight: 900; }
+    .privacy-note { border-left: 4px solid #1f5f99; background: #f7fafc; padding: 14px 16px; margin: 16px 0; color: #344054; }
+    .privacy-footer { margin-top: 24px; color: #667085; font-size: 13px; }
+    body.embedded-policy { background: #fff; }
+    body.embedded-policy .privacy-page { max-width: none; padding: 0; }
+    body.embedded-policy .privacy-card { border: 0; border-radius: 0; box-shadow: none; }
+    body.embedded-policy .privacy-head { display: none; }
+    body.embedded-policy .privacy-body { padding-top: 28px; }
+    @media (max-width: 640px) {
+      .privacy-page { padding: 24px 14px 54px; }
+      .privacy-head, .privacy-body { padding: 24px 20px; }
+      .privacy-head h1 { font-size: 26px; }
+      .privacy-table th, .privacy-table td { display: block; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <script>
+    if (new URLSearchParams(window.location.search).get('embed') === '1') {
+      document.body.classList.add('embedded-policy');
+    }
+  </script>
+  <main class="privacy-page">
+    <article class="privacy-card">
+      <header class="privacy-head">
+        <a href="/">← 서비스로 돌아가기</a>
+        <h1>개인정보처리방침</h1>
+        <p>RE:WORK CENTER는 상담지원 리포트 생성 및 서비스 운영을 위해 필요한 범위에서 개인정보를 처리합니다.</p>
+      </header>
+
+      <section class="privacy-body">
+        <h2>1. 개인정보의 처리 목적</h2>
+        <p>회사는 다음 목적을 위해 개인정보를 처리합니다. 처리한 개인정보는 다음 목적 외의 용도로 이용하지 않습니다.</p>
+        <ul>
+          <li>상담사 계정 생성, 로그인, 권한 확인 및 계정 관리</li>
+          <li>상담지원 리포트 생성을 위한 입력값의 일시 처리</li>
+          <li>공지사항 제공 및 관리자 기능 운영</li>
+          <li>리포트 생성 통계, 오류 유형, 복구 유형, 토큰 사용량 등 서비스 운영 지표 확인</li>
+          <li>성공사례 DB 검색 및 리포트 생성을 위한 사례 데이터 관리</li>
+        </ul>
+
+        <h2>2. 처리하는 개인정보 항목</h2>
+        <table class="privacy-table">
+          <tbody>
+            <tr>
+              <th>상담사 계정</th>
+              <td>지사, 이름, 이메일 주소, 전화번호, 아이디, 비밀번호, 계정 상태, 로그인 기록</td>
+            </tr>
+            <tr>
+              <th>리포트 생성 입력값</th>
+              <td>상담사가 입력한 내담자 관련 검사 결과, 희망직무, 나이, 학력, 경력, 자격, 추가 메모 등 리포트 생성에 필요한 정보</td>
+            </tr>
+            <tr>
+              <th>리포트 생성 통계</th>
+              <td>리포트 종류, 생성 성공/실패 여부, 오류 유형, 복구 유형, 토큰 사용량, 생성 시각</td>
+            </tr>
+            <tr>
+              <th>성공사례 DB</th>
+              <td>엑셀 업로드를 통해 등록된 사례 번호, 사례자, 현재직업, 이전 경력, 보유 자격/교육, 준비방법, 주요활동, 출처, 성공요인 등</td>
+            </tr>
+            <tr>
+              <th>자동 수집 가능 정보</th>
+              <td>접속 일시, 요청 로그, 오류 로그, 브라우저 정보 등 서비스 운영 과정에서 생성되는 정보</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="privacy-note">
+          본 서비스는 생성된 리포트와 내담자 입력 정보를 서버 DB에 저장하지 않습니다. 다만 리포트 생성을 위해 입력값이 AI API로 전송될 수 있으며, 운영 통계는 저장될 수 있습니다.
+        </div>
+
+        <h2>3. 개인정보의 처리 및 보유 기간</h2>
+        <table class="privacy-table">
+          <tbody>
+            <tr>
+              <th>상담사 계정</th>
+              <td>관리자가 계정을 삭제하거나 엑셀 재업로드 등으로 계정을 갱신할 때까지 보관합니다.</td>
+            </tr>
+            <tr>
+              <th>내담자 입력 정보 및 생성 리포트</th>
+              <td>리포트 생성 과정에서 일시적으로 처리하며, 서버 DB에 저장하지 않습니다.</td>
+            </tr>
+            <tr>
+              <th>리포트 생성 통계</th>
+              <td>서비스 운영, 비용 분석, 오류 개선 목적을 위해 보관합니다. 보관 기간은 내부 운영 기준에 따라 조정될 수 있습니다.</td>
+            </tr>
+            <tr>
+              <th>성공사례 DB</th>
+              <td>관리자가 삭제하거나 갱신할 때까지 보관합니다.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>4. AI API 이용 및 외부 전송</h2>
+        <p>리포트 생성을 위해 상담사가 입력한 정보가 Google Gemini API 등 외부 AI 서비스로 전송될 수 있습니다. 회사는 리포트 생성에 필요한 범위의 정보만 전송하도록 운영하며, 주민등록번호, 건강정보, 금융정보 등 불필요한 민감정보는 입력하지 않도록 안내합니다.</p>
+
+        <h2>5. 개인정보의 제3자 제공 및 처리 위탁</h2>
+        <p>회사는 원칙적으로 정보주체의 개인정보를 외부에 제공하지 않습니다. 다만 서비스 운영을 위해 다음과 같은 외부 서비스를 이용할 수 있습니다.</p>
+        <table class="privacy-table">
+          <tbody>
+            <tr>
+              <th>Supabase</th>
+              <td>상담사 계정, 공지사항, 통계, 성공사례 DB 저장 및 관리</td>
+            </tr>
+            <tr>
+              <th>Render</th>
+              <td>웹 애플리케이션 서버 운영 및 배포</td>
+            </tr>
+            <tr>
+              <th>Google Gemini API</th>
+              <td>AI 기반 리포트 생성을 위한 입력값 처리</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>6. 개인정보의 파기</h2>
+        <p>개인정보의 처리 목적이 달성되거나 보유 기간이 종료된 경우 지체 없이 파기합니다. 전자적 파일 형태의 정보는 복구 및 재생이 어렵도록 삭제하며, 종이 문서가 있는 경우 분쇄 또는 소각합니다.</p>
+
+        <h2>7. 정보주체의 권리</h2>
+        <p>정보주체는 개인정보 열람, 정정, 삭제, 처리정지를 요청할 수 있습니다. 요청은 아래 개인정보 보호책임자 연락처를 통해 접수할 수 있으며, 회사는 관련 법령에 따라 지체 없이 조치합니다.</p>
+
+        <h2>8. 개인정보의 안전성 확보 조치</h2>
+        <ul>
+          <li>관리자 및 상담사 계정 접근 권한 관리</li>
+          <li>비밀번호 및 인증 토큰 관리</li>
+          <li>서버 및 데이터베이스 접근 제한</li>
+          <li>오류 로그와 운영 통계의 최소 수집</li>
+          <li>사례자 이름 마스킹 등 개인정보 노출 최소화</li>
+        </ul>
+
+        <h2>9. 입력 금지 정보 안내</h2>
+        <p>상담사는 리포트 생성 시 주민등록번호, 여권번호, 운전면허번호, 건강정보, 금융정보, 범죄경력 등 리포트 생성에 필요하지 않은 민감정보 또는 고유식별정보를 입력하지 않아야 합니다.</p>
+
+        <h2>10. 개인정보 보호책임자</h2>
+        <table class="privacy-table">
+          <tbody>
+            </tr>
+            <tr>
+              <th>성명</th>
+              <td>윤성수</td>
+            </tr>
+            <tr>
+              <th>직책</th>
+              <td>경영지원실장</td>
+            </tr>
+            <tr>
+              <th>연락처</th>
+              <td>TEL. (02)703-9900 / FAX. (02)703-9182</td>
+            </tr>
+            <tr>
+              <th>이메일</th>
+              <td>railpop@jmcareer.co.kr</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>11. 개인정보처리방침의 변경</h2>
+        <p>본 개인정보처리방침은 법령, 서비스 구조, 개인정보 처리 방식의 변경에 따라 수정될 수 있습니다. 변경 시 서비스 화면 또는 공지사항을 통해 안내합니다.</p>
+
+        <div class="privacy-footer">
+          시행일: 2026년 7월 1일
+        </div>
+      </section>
+    </article>
+  </main>
+</body>
+</html>

@@ -90,8 +90,8 @@ function landingNoticeModalHtml() {
   return `
     <div id="landingNoticeModal" class="landing-notice-modal hidden" role="dialog" aria-modal="true" aria-labelledby="landingNoticeModalTitle" onclick="if(event.target===this)closeLandingNotice()">
       <article class="landing-notice-dialog">
-        <button type="button" class="landing-notice-close" aria-label="공지사항 닫기" onclick="closeLandingNotice()">×</button>
         <div class="landing-notice-dialog-head">
+          <button type="button" class="landing-notice-close" aria-label="공지사항 닫기" onclick="closeLandingNotice()">×</button>
           <span>공지사항</span>
           <h3 id="landingNoticeModalTitle"></h3>
           <small id="landingNoticeModalDate"></small>
@@ -122,6 +122,33 @@ function openLandingNotice(id) {
 
 function closeLandingNotice() {
   const modal = document.getElementById('landingNoticeModal');
+  if (modal) modal.classList.add('hidden');
+  document.body.classList.remove('modal-open');
+}
+
+function privacyPolicyModalHtml() {
+  return `
+    <div id="privacyPolicyModal" class="privacy-policy-modal hidden" role="dialog" aria-modal="true" aria-labelledby="privacyPolicyModalTitle" onclick="if(event.target===this)closePrivacyPolicy()">
+      <article class="privacy-policy-dialog">
+        <header class="privacy-policy-head">
+          <button type="button" class="privacy-policy-close" aria-label="개인정보처리방침 닫기" onclick="closePrivacyPolicy()">×</button>
+          <span>정책 안내</span>
+          <h3 id="privacyPolicyModalTitle">개인정보처리방침</h3>
+        </header>
+        <iframe class="privacy-policy-frame" src="/privacy.html?embed=1" title="개인정보처리방침"></iframe>
+      </article>
+    </div>`;
+}
+
+function openPrivacyPolicy() {
+  const modal = document.getElementById('privacyPolicyModal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+}
+
+function closePrivacyPolicy() {
+  const modal = document.getElementById('privacyPolicyModal');
   if (modal) modal.classList.add('hidden');
   document.body.classList.remove('modal-open');
 }
@@ -186,13 +213,22 @@ function landingTemplate() {
       </section>
 
       <footer class="landing-footer">
-        <strong>${content.footer.brand}</strong><br>
-        ${content.footer.description}
-        <div class="landing-copyright">© 2026 JMCareer. All Rights Reserved.</div>
+        <div class="landing-policy-links"><button type="button" onclick="openPrivacyPolicy()">개인정보처리방침</button></div>
+        <div class="landing-footer-brand">
+          <strong>${content.footer.brand}</strong><br>
+          ${content.footer.description}
+        </div>
+        <div class="landing-legal-row">
+          <span class="landing-copyright-text">© 2026 JMCareer. All Rights Reserved.</span>
+          <span class="landing-company-info">서울특별시 영등포구 경인로 775 (문래동3가 55-20, 에이스하이테크시티 1동 9층)<br>TEL. (02)703-9900 FAX. (02)703-9182 사업자번호 : 210-81-36536 대표 : 윤종만</span>
+        </div>
       </footer>
       ${landingNoticeModalHtml()}
+      ${privacyPolicyModalHtml()}
     </div>`;
 }
 
 window.openLandingNotice = openLandingNotice;
 window.closeLandingNotice = closeLandingNotice;
+window.openPrivacyPolicy = openPrivacyPolicy;
+window.closePrivacyPolicy = closePrivacyPolicy;
