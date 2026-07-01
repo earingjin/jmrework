@@ -218,9 +218,9 @@ function landingTemplate() {
           <strong>${content.footer.brand}</strong><br>
           ${content.footer.description}
         </div>
+        <div class="landing-company-info">서울특별시 영등포구 경인로 775 (문래동3가 55-20, 에이스하이테크시티 1동 9층)<br>TEL. (02)703-9900 FAX. (02)703-9182 사업자번호 : 210-81-36536 대표 : 윤종만</div>
         <div class="landing-legal-row">
-          <span class="landing-copyright-text">© 2026 JMCareer. All Rights Reserved.</span>
-          <span class="landing-company-info">서울특별시 영등포구 경인로 775 (문래동3가 55-20, 에이스하이테크시티 1동 9층)<br>TEL. (02)703-9900 FAX. (02)703-9182 사업자번호 : 210-81-36536 대표 : 윤종만</span>
+          <span class="landing-copyright-text">© 2026 JMCAREER. All Rights Reserved.</span>
         </div>
       </footer>
       ${landingNoticeModalHtml()}
