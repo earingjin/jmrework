@@ -16,7 +16,7 @@ function shellTemplate() {
           <button class="${state.active === "statistics" ? "active" : ""}" data-action="set-section" data-id="statistics"><span>리포트 통계</span><span>›</span></button>
         </nav>
         <div class="logout"><button class="btn secondary full" data-action="logout">로그아웃</button></div>
-        <div class="sidebar-copyright">© 2026 JM Career. All Rights Reserved.</div>
+        <div class="sidebar-copyright">© 2026 JMCareer. All Rights Reserved.</div>
       </aside>
       <main class="main">${adminSection()}${noticesSection()}${successCasesSection()}${statisticsSection()}</main>
     </div>`;

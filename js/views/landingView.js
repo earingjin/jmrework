@@ -188,7 +188,7 @@ function landingTemplate() {
       <footer class="landing-footer">
         <strong>${content.footer.brand}</strong><br>
         ${content.footer.description}
-        <div class="landing-copyright">© 2026 JM Career. All Rights Reserved.</div>
+        <div class="landing-copyright">© 2026 JMCareer. All Rights Reserved.</div>
       </footer>
       ${landingNoticeModalHtml()}
     </div>`;
