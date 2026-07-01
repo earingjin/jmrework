@@ -118,7 +118,19 @@
     .interest-report .swot-box strong{display:block;background:#f3f7fb;color:#344054;font-weight:800;margin:-14px -14px 10px;padding:11px 12px;border-bottom:1px solid var(--line)}
     .interest-report .swot-box ul,.interest-report .question-list{margin:8px 0 12px 20px;padding:0}
     .interest-report .swot-box li,.interest-report .question-list li{line-height:1.55;margin:4px 0}
-    .interest-report .jobs-page table tr,.interest-report table tr,.interest-report .question-list li{break-inside:avoid;page-break-inside:avoid}
+    .interest-report .report-section-box{border:1px solid var(--line);padding:14px 16px;margin:12px 0 18px;break-inside:avoid;page-break-inside:avoid}
+    .interest-report .report-subsection{padding:0;margin:0 0 16px;break-inside:avoid;page-break-inside:avoid}
+    .interest-report .report-subsection:last-child{margin-bottom:0}
+    .interest-report .report-subsection h3{margin:0 0 8px;color:var(--navy);font-size:15px}
+    .interest-report .report-subsection p{margin:6px 0;line-height:1.55}
+    .interest-report .report-subsection ul,.interest-report .report-subsection ol{margin-bottom:0}
+    .interest-report .action-strategy{margin:0}
+    .interest-report .action-strategy h4{margin:12px 0 6px;color:var(--navy);font-size:15px}
+    .interest-report .action-strategy h4:first-child{margin-top:0}
+    .interest-report .action-strategy ul{margin:6px 0 12px 20px;padding:0}
+    .interest-report .action-strategy ul:last-child{margin-bottom:0}
+    .interest-report .action-strategy li{line-height:1.55;margin:4px 0}
+    .interest-report .jobs-page table tr,.interest-report table tr,.interest-report .question-list li,.interest-report .action-strategy h4,.interest-report .action-strategy li{break-inside:avoid;page-break-inside:avoid}
     @media print{
       .interest-report{font-size:13px;line-height:1.5}
       .interest-report .no-target-title{font-size:24px}
