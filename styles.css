@@ -125,6 +125,7 @@
     .interest-report .report-subsection{padding:0;margin:0 0 16px;break-inside:avoid;page-break-inside:avoid}
     .interest-report .report-subsection:last-child{margin-bottom:0}
     .interest-report .report-subsection h3{margin:0 0 8px;color:var(--navy);font-size:15px}
+    .interest-report .question-subsection-description{margin:0 0 10px;color:var(--navy);font-size:14px;font-weight:800;line-height:1.55}
     .interest-report .report-subsection p{margin:6px 0;line-height:1.55}
     .interest-report .report-subsection ul,.interest-report .report-subsection ol{margin-bottom:0}
     .interest-report .action-strategy{margin:0}
