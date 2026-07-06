@@ -37,6 +37,11 @@ function renderPdfSwot(swot={}) {
   return `<table><tbody><tr><th>Strengths 강점</th><th>Weaknesses 보완점</th></tr><tr><td>${safeReportList(swot.strengths)}</td><td>${safeReportList(swot.weaknesses)}</td></tr><tr><th>Opportunities 기회</th><th>Threats 위협</th></tr><tr><td>${safeReportList(swot.opportunities)}</td><td>${safeReportList(swot.threats)}</td></tr></tbody></table>`;
 }
 
+function renderJobExampleInfoHint() {
+  const message = '더 자세한 결과를 원하는 경우, 왼쪽 하단의 <참여자에게 연결할 시사점>에 더 많은 정보를 입력해 주세요.';
+  return `<button type="button" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-left:8px;border:1px solid #4a6fa5;border-radius:50%;background:#f5f9ff;color:#4a6fa5;font-size:13px;font-weight:700;cursor:pointer;vertical-align:middle;" onclick="window.alert(${JSON.stringify(message)});" title="추가 안내" aria-label="추가 안내">?</button>`;
+}
+
 function renderPdfJobTable(items) {
   const jobs = safeRecommendedJobs(items);
   const rows = jobs.length
@@ -147,7 +152,7 @@ function renderNoTargetJobReportSafe(r) {
 ${renderNoTargetIntegratedAnalysis(r.integratedAnalysis)}
 <h2>검사 결과 기반 SWOT 분석</h2>
 ${renderPdfSwot(r.swot)}
-<div class="jobs-page"><h2>추천 직업 5개</h2>${renderPdfJobTable(r.recommendedJobs)}</div>
+<div class="jobs-page"><h2>추천 직업 5개${renderJobExampleInfoHint()}</h2>${renderPdfJobTable(r.recommendedJobs)}</div>
 <h2>상담사용 Tip. 결과 해석을 위한 질문</h2>
 ${renderQuestionSubsectionBox('경험·강점 연결 질문', '본 질문은 내담자의 실제 경험에서 반복되는 흥미, 강점, 일하는 방식, 주변의 인정 단서를 찾기 위한 질문입니다.', renderPdfQuestionRange(r.aiLifeQuestions, 0, 10))}
 ${renderQuestionSubsectionBox('구체적인 진로설계를 위한 질문', '본 질문은 흥미결과를 바탕으로 실제적인 직업확장, 직업조사를 위한 질문입니다.', renderPdfQuestionRange(r.aiLifeQuestions, 10, 5))}</div>`;
@@ -169,7 +174,7 @@ ${renderReportSectionBox(
 ${renderReportSectionBox(renderActionStrategy(r.finalStrategy), 'report-section-box-strategy')}
 <h2>검사 결과 기반 SWOT 분석</h2>
 ${renderPdfSwot(r.swot)}
-<div class="jobs-page"><h2>추천 직업 5개</h2>${renderPdfJobTable(r.recommendedJobs)}</div>
+<div class="jobs-page"><h2>추천 직업 5개${renderJobExampleInfoHint()}</h2>${renderPdfJobTable(r.recommendedJobs)}</div>
 <h2>저출산·고령화 시대의 전망</h2>
 ${safeReportParagraph(r.demographicOutlook)}
 <h2>AI·디지털 전환 시대의 전망</h2>
