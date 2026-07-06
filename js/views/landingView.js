@@ -4,6 +4,16 @@ function landingNavLinksHtml() {
     .join('');
 }
 
+function landingAuthButtonHtml() {
+  if (state.user) return '<button class="btn" onclick="logout()">로그아웃</button>';
+  return `<button class="btn" onclick="goLogin()">${LANDING_CONTENT.buttons.login}</button>`;
+}
+
+function landingStartButtonHtml(className = 'btn') {
+  if (state.user) return `<button class="${className}" onclick="goAppHome()">대시보드로 이동</button>`;
+  return `<button class="${className}" onclick="goLogin()">${LANDING_CONTENT.buttons.start}</button>`;
+}
+
 function landingCheckListHtml(items) {
   return items.map(item => `<li>${item}</li>`).join('');
 }
@@ -165,7 +175,7 @@ function landingTemplate() {
         </div>
         <nav class="landing-nav-links">
           ${landingNavLinksHtml()}
-          <button class="btn" onclick="goLogin()">${content.buttons.login}</button>
+          ${landingAuthButtonHtml()}
         </nav>
       </header>
 
@@ -176,7 +186,7 @@ function landingTemplate() {
             <h1>${content.hero.title}</h1>
             <p>${content.hero.description}</p>
             <div class="actions">
-              <button class="btn" onclick="goLogin()">${content.buttons.start}</button>
+              ${landingStartButtonHtml()}
               <a class="btn secondary" href="#success-report">${content.buttons.viewReport}</a>
             </div>
             ${landingNoticeBoardHtml()}
@@ -209,7 +219,7 @@ function landingTemplate() {
           <h2>${content.cta.title}</h2>
           <p>${content.cta.description}</p>
         </div>
-        <button class="btn secondary" onclick="goLogin()">${content.buttons.start}</button>
+        ${landingStartButtonHtml('btn secondary')}
       </section>
 
       <footer class="landing-footer">

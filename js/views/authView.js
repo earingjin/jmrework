@@ -1,15 +1,32 @@
 function goLogin() {
+  if (state.user) {
+    goDashboard();
+    return;
+  }
   pushHistory();
   state.view = 'login';
-  state.user = null;
   render();
 }
 
 function goLanding() {
   pushHistory();
-  state.user = null;
   state.view = 'landing';
   loadPublicNotices().finally(() => render());
+}
+
+function goAppHome() {
+  if (!state.user) {
+    goLogin();
+    return;
+  }
+  pushHistory();
+  state.view = 'app';
+  state.active = APP_ROLE === 'admin' ? 'admin' : 'dashboard';
+  state.activeModule = defaultReportType();
+  state.currentReport = null;
+  state.editMode = false;
+  state.reportMenuOpen = false;
+  loadNotices().finally(() => render());
 }
 
 function loginTemplate() {
