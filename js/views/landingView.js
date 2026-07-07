@@ -1,7 +1,5 @@
 function landingNavLinksHtml() {
-  return LANDING_CONTENT.nav
-    .map(item => `<a href="${item.href}">${item.label}</a>`)
-    .join('');
+  return '<button class="btn" onclick="goAppHome()">대시보드로 이동</button>';
 }
 
 function landingAuthButtonHtml() {

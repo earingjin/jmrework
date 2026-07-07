@@ -39,7 +39,14 @@ function renderPdfSwot(swot={}) {
 
 function renderJobExampleInfoHint() {
   const message = '더 자세한 결과를 원하는 경우, 왼쪽 하단의 <참여자에게 연결할 시사점>에 더 많은 정보를 입력해 주세요.';
-  return `<button type="button" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-left:8px;border:1px solid #4a6fa5;border-radius:50%;background:#f5f9ff;color:#4a6fa5;font-size:13px;font-weight:700;cursor:pointer;vertical-align:middle;" onclick="window.alert(${JSON.stringify(message)});" title="추가 안내" aria-label="추가 안내">?</button>`;
+  return `<span style="position:relative;display:inline-flex;align-items:center;vertical-align:middle;"><button type="button" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-left:8px;border:1px solid #4a6fa5;border-radius:50%;background:#f5f9ff;color:#4a6fa5;font-size:13px;font-weight:700;cursor:pointer;vertical-align:middle;" onclick="toggleJobExampleInfoHint(this);" title="추가 안내" aria-label="추가 안내" aria-expanded="false">?</button><span hidden style="position:absolute;left:34px;top:50%;z-index:20;width:285px;max-width:min(285px,calc(100vw - 80px));transform:translateY(-50%);padding:10px 12px;border:1px solid #c9d8ea;border-radius:6px;background:#fff;color:#344054;box-shadow:0 10px 24px rgba(15,39,66,.16);font-size:12px;font-weight:600;line-height:1.55;text-align:left;white-space:normal;">${escapeHtml(message)}</span></span>`;
+}
+
+function toggleJobExampleInfoHint(button) {
+  const note = button?.nextElementSibling;
+  if (!note) return;
+  note.hidden = !note.hidden;
+  button.setAttribute('aria-expanded', String(!note.hidden));
 }
 
 function renderPdfJobTable(items) {
@@ -152,7 +159,7 @@ function renderNoTargetJobReportSafe(r) {
 ${renderNoTargetIntegratedAnalysis(r.integratedAnalysis)}
 <h2>검사 결과 기반 SWOT 분석</h2>
 ${renderPdfSwot(r.swot)}
-<div class="jobs-page"><h2>추천 직업 5개${renderJobExampleInfoHint()}</h2>${renderPdfJobTable(r.recommendedJobs)}</div>
+<div class="jobs-page"><h2>흥미의 속성과 유사한 직업군 예시${renderJobExampleInfoHint()}</h2>${renderPdfJobTable(r.recommendedJobs)}</div>
 <h2>상담사용 Tip. 결과 해석을 위한 질문</h2>
 ${renderQuestionSubsectionBox('경험·강점 연결 질문', '본 질문은 내담자의 실제 경험에서 반복되는 흥미, 강점, 일하는 방식, 주변의 인정 단서를 찾기 위한 질문입니다.', renderPdfQuestionRange(r.aiLifeQuestions, 0, 10))}
 ${renderQuestionSubsectionBox('구체적인 진로설계를 위한 질문', '본 질문은 흥미결과를 바탕으로 실제적인 직업확장, 직업조사를 위한 질문입니다.', renderPdfQuestionRange(r.aiLifeQuestions, 10, 5))}</div>`;
@@ -174,7 +181,7 @@ ${renderReportSectionBox(
 ${renderReportSectionBox(renderActionStrategy(r.finalStrategy), 'report-section-box-strategy')}
 <h2>검사 결과 기반 SWOT 분석</h2>
 ${renderPdfSwot(r.swot)}
-<div class="jobs-page"><h2>추천 직업 5개${renderJobExampleInfoHint()}</h2>${renderPdfJobTable(r.recommendedJobs)}</div>
+<div class="jobs-page"><h2>흥미의 속성과 유사한 직업군 예시${renderJobExampleInfoHint()}</h2>${renderPdfJobTable(r.recommendedJobs)}</div>
 <h2>저출산·고령화 시대의 전망</h2>
 ${safeReportParagraph(r.demographicOutlook)}
 <h2>AI·디지털 전환 시대의 전망</h2>
@@ -255,6 +262,7 @@ async function generateGeminiInterestReport(p,target,hasTarget){if(!hasTarget)re
 
   window.toggleInterestCollapse = toggleInterestCollapse;
   window.toggleInterestTargetInput = toggleInterestTargetInput;
+  window.toggleJobExampleInfoHint = toggleJobExampleInfoHint;
   window.generateNoTargetJobInterestReport = generateNoTargetJobInterestReport;
   window.generateGeminiInterestReport = generateGeminiInterestReport;
   window.normalizeNoTargetJobReportData = normalizeNoTargetJobReportData;
