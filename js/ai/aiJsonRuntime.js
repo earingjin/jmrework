@@ -12,6 +12,20 @@
       String(err?.message || '').includes('JSON');
   }
 
+  function isModelFallbackEligible(err) {
+    const errorType = jsonRuntimeErrorType(err);
+    return [
+      REPORT_ERROR_TYPE.JSON_PARSE_ERROR,
+      REPORT_ERROR_TYPE.JSON_REPAIR_FAILED,
+      REPORT_ERROR_TYPE.AI_EMPTY_RESPONSE,
+      REPORT_ERROR_TYPE.AI_RESPONSE_TRUNCATED,
+      REPORT_ERROR_TYPE.RATE_LIMIT,
+      REPORT_ERROR_TYPE.SERVICE_UNAVAILABLE,
+      REPORT_ERROR_TYPE.NETWORK_ERROR,
+      REPORT_ERROR_TYPE.TIMEOUT
+    ].includes(errorType) || err?.status === 400 || err?.status === 404;
+  }
+
   function isLightJsonParseStage(stage = '') {
     const text = String(stage || '');
     return text === 'raw' ||
@@ -77,6 +91,7 @@
       err.status = res.status;
       throw err;
     }
+    const actualModelName = res.geminiModelName || modelName;
     const candidate = data?.candidates?.[0] || {};
     assertGeminiCandidateCompleted(candidate, context || 'Gemini JSON');
     const text = geminiTextFromCandidate(candidate);
@@ -85,7 +100,7 @@
       err.errorType = REPORT_ERROR_TYPE.AI_EMPTY_RESPONSE;
       throw err;
     }
-    return { text, tokenUsage: normalizeTokenUsage(data.usageMetadata), raw: data };
+    return { text, tokenUsage: normalizeTokenUsage(data.usageMetadata), raw: data, modelName: actualModelName };
   }
 
   async function repairGeminiJson({ rawText, schema, modelName, context }) {
@@ -176,10 +191,10 @@
   }
 
   async function generateJsonOnce(options, parseOptions = {}) {
-    const { text, tokenUsage, raw } = await requestGeminiJson(options);
+    const { text, tokenUsage, raw, modelName } = await requestGeminiJson(options);
     try {
-      const json = await parseJsonWithRecovery(text, { ...options, ...parseOptions });
-      return { json, tokenUsage, raw, text };
+      const json = await parseJsonWithRecovery(text, { ...options, ...parseOptions, modelName });
+      return { json, tokenUsage, raw, text, modelName };
     } catch (err) {
       throw normalizeJsonRuntimeError(err, text);
     }
@@ -187,6 +202,9 @@
 
   async function generateJsonWithRecovery(options = {}) {
     const modelName = options.modelName || getGeminiModel(options.modelScope || 'default');
+    const modelScope = options.modelScope || options.reportType || 'default';
+    const modelCandidates = options.modelCandidates ||
+      (window.geminiModelCandidates ? window.geminiModelCandidates(modelScope, modelName) : [modelName]);
     const body = options.body || {
       system_instruction: options.systemInstruction ? { parts: [{ text: options.systemInstruction }] } : undefined,
       contents: [{ role: 'user', parts: [{ text: options.userPrompt || '' }] }],
@@ -199,62 +217,80 @@
     };
     Object.keys(body).forEach((key) => body[key] === undefined && delete body[key]);
 
-    const runtimeOptions = {
-      ...options,
-      modelName,
-      body,
-      context: options.context || options.reportType || 'Gemini JSON'
-    };
-
-    try {
-      return await generateJsonOnce(runtimeOptions, { allowJsonRepair: options.allowJsonRepair !== false });
-    } catch (err) {
-      if (!isJsonRuntimeParseError(err) || options.regenerateOnParseFailure === false) throw err;
-      const startedAt = Date.now();
-      reportJsonRuntimeIssue({
-        modelName,
-        parseSuccess: false,
-        autoRepairAttempted: true,
-        autoRepairSuccess: false,
-        jsonRepairAttempted: true,
-        jsonRepairSuccess: false,
-        regenerateAttempted: true,
-        regenerateSuccess: false,
-        errorMessage: err?.message || String(err),
-        durationMs: 0
-      });
-      if (window.state) window.state.reportGenerationRetryCount += 1;
+    let lastErr = null;
+    for (let index = 0; index < modelCandidates.length; index += 1) {
+      const candidateModelName = modelCandidates[index];
+      const runtimeOptions = {
+        ...options,
+        modelName: candidateModelName,
+        body,
+        context: options.context || options.reportType || 'Gemini JSON'
+      };
       try {
-        const result = await generateJsonOnce(runtimeOptions, { allowJsonRepair: false });
-        reportJsonRuntimeIssue({
-          modelName,
-          parseSuccess: true,
-          autoRepairAttempted: true,
-          autoRepairSuccess: true,
-          jsonRepairAttempted: true,
-          jsonRepairSuccess: false,
-          regenerateAttempted: true,
-          regenerateSuccess: true,
-          durationMs: Date.now() - startedAt
-        });
-        return result;
-      } catch (regenerateErr) {
-        reportJsonRuntimeIssue({
-          modelName,
-          parseSuccess: false,
-          autoRepairAttempted: true,
-          autoRepairSuccess: false,
-          jsonRepairAttempted: true,
-          jsonRepairSuccess: false,
-          regenerateAttempted: true,
-          regenerateSuccess: false,
-          errorMessage: regenerateErr?.message || String(regenerateErr),
-          durationMs: Date.now() - startedAt
-        });
-        regenerateErr.errorType = jsonRuntimeErrorType(regenerateErr);
-        throw regenerateErr;
+        return await generateJsonOnce(runtimeOptions, { allowJsonRepair: options.allowJsonRepair !== false });
+      } catch (err) {
+        if (!isJsonRuntimeParseError(err) || options.regenerateOnParseFailure === false) {
+          lastErr = err;
+        } else {
+          const startedAt = Date.now();
+          reportJsonRuntimeIssue({
+            modelName: candidateModelName,
+            parseSuccess: false,
+            autoRepairAttempted: true,
+            autoRepairSuccess: false,
+            jsonRepairAttempted: true,
+            jsonRepairSuccess: false,
+            regenerateAttempted: true,
+            regenerateSuccess: false,
+            errorMessage: err?.message || String(err),
+            durationMs: 0
+          });
+          if (window.state) window.state.reportGenerationRetryCount += 1;
+          try {
+            const result = await generateJsonOnce(runtimeOptions, { allowJsonRepair: false });
+            reportJsonRuntimeIssue({
+              modelName: result.modelName || candidateModelName,
+              parseSuccess: true,
+              autoRepairAttempted: true,
+              autoRepairSuccess: true,
+              jsonRepairAttempted: true,
+              jsonRepairSuccess: false,
+              regenerateAttempted: true,
+              regenerateSuccess: true,
+              durationMs: Date.now() - startedAt
+            });
+            return result;
+          } catch (regenerateErr) {
+            reportJsonRuntimeIssue({
+              modelName: candidateModelName,
+              parseSuccess: false,
+              autoRepairAttempted: true,
+              autoRepairSuccess: false,
+              jsonRepairAttempted: true,
+              jsonRepairSuccess: false,
+              regenerateAttempted: true,
+              regenerateSuccess: false,
+              errorMessage: regenerateErr?.message || String(regenerateErr),
+              durationMs: Date.now() - startedAt
+            });
+            regenerateErr.errorType = jsonRuntimeErrorType(regenerateErr);
+            lastErr = regenerateErr;
+          }
+        }
+        if (index < modelCandidates.length - 1 && isModelFallbackEligible(lastErr)) {
+          if (window.noteReportGenerationIssue) {
+            window.noteReportGenerationIssue({
+              error: lastErr,
+              modelName: modelCandidates[index + 1],
+              recoveryType: REPORT_RECOVERY_TYPE.MODEL_FALLBACK
+            });
+          }
+          continue;
+        }
+        throw lastErr;
       }
     }
+    throw lastErr || new Error('Gemini JSON generation failed.');
   }
 
   Object.assign(window, {

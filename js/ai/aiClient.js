@@ -18,9 +18,9 @@
     localStorage.setItem('GEMINI_MODEL', model);
   }
 
-  function geminiInterestModelCandidates() {
-    const primary = getGeminiModel('interest');
-    return Array.from(new Set([primary, 'gemini-2.5-flash'].filter(Boolean)));
+  function geminiModelCandidates(scope = 'default', primaryModel = '') {
+    const primary = primaryModel || getGeminiModel(scope);
+    return Array.from(new Set([primary, 'gemini-2.5-flash', 'gemini-2.5-flash-lite'].filter(Boolean)));
   }
 
   function wait(ms) {
@@ -108,30 +108,6 @@
     }
   }
 
-  async function fetchGeminiInterestWithModelFallback(body) {
-    const models = geminiInterestModelCandidates();
-    let lastErr = null;
-    for (let index = 0; index < models.length; index += 1) {
-      const model = models[index];
-      try {
-        const res = await window.AI_GATEWAY.generateContent({ model, body, request: fetchGeminiWithRetry });
-        if (!res.ok && (res.status === 400 || res.status === 404) && index < models.length - 1) {
-          const apiError = await res.clone().json().catch(() => ({ status: res.status, statusText: res.statusText }));
-          lastErr = new Error(apiError?.error?.message || `Gemini 모델 ${model}을 사용할 수 없습니다.`);
-          lastErr.status = res.status;
-          console.warn(`Gemini 모델 ${model} 사용 불가, 다음 후보 모델로 재시도합니다.`, apiError);
-          continue;
-        }
-        return res;
-      } catch (err) {
-        lastErr = err;
-        if (!err?.isGeminiTemporaryFailure || index === models.length - 1) throw err;
-        console.warn(`Gemini 모델 ${model} 일시 장애, 다음 후보 모델로 재시도합니다.`, err);
-      }
-    }
-    throw lastErr || new Error(GEMINI_TEMPORARY_ERROR_MESSAGE);
-  }
-
   function isGeminiTemporaryBusy(err) {
     const msg = String(err?.message || err || '').toLowerCase();
     return msg.includes('high demand') ||
@@ -148,11 +124,10 @@
     GEMINI_RATE_LIMIT_ERROR_MESSAGE,
     getGeminiModel,
     setGeminiModel,
-    geminiInterestModelCandidates,
+    geminiModelCandidates,
     wait,
     isGeminiRetryableError,
     fetchGeminiWithRetry,
-    fetchGeminiInterestWithModelFallback,
     isGeminiTemporaryBusy
   });
 })();

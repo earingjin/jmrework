@@ -31,7 +31,7 @@ function goAppHome() {
 
 function loginTemplate() {
   const content = LANDING_CONTENT;
-  return `<div class="login-screen"><section class="login-hero"><div class="real-hero-copy"><span class="real-hero-badge">${content.hero.badge}</span><h1>${content.hero.title}</h1><p>${content.hero.description}</p></div><div class="real-hero-image"><img src="${LANDING_IMAGES.hero}" alt="${content.hero.imageAlt}"></div></section><section class="login-panel"><div class="login-box"><div class="small">제이엠커리어 임직원 전용(Beta)</div><h2>LOGIN</h2><p>발급받은 상담사 아이디와 비밀번호로 접속합니다.</p><div class="field"><label>아이디</label><input id="loginId" autocomplete="username"></div><div class="field"><label>비밀번호</label><input id="loginPw" type="password" autocomplete="current-password"></div><button type="button" class="btn full" onclick="guardedLogin()">접속하기</button><button type="button" class="btn secondary full" onclick="goLanding()" style="margin-top:8px">첫 화면으로 돌아가기</button><div class="demo-info">※ 비밀번호를 변경하신 경우에도 명단 갱신 시 휴대폰 번호 뒷자리 4자리로 초기화될 수 있습니다. 로그인이 되지 않을 경우 먼저 휴대폰 번호 뒷자리 4자리로 다시 시도해 주세요.</div></div></section></div>`;
+  return `<div class="login-screen"><section class="login-hero"><div class="real-hero-copy"><span class="real-hero-badge">${content.hero.badge}</span><h1>${content.hero.title}</h1><p>${content.hero.description}</p></div><div class="real-hero-image"><img src="${LANDING_IMAGES.hero}" alt="${content.hero.imageAlt}"></div></section><section class="login-panel"><div class="login-box"><div class="small">제이엠커리어 임직원 전용(Beta)</div><h2>LOGIN</h2><p>발급받은 상담사 아이디와 비밀번호로 접속합니다.</p><div class="field"><label>아이디</label><input id="loginId" autocomplete="username"></div><div class="field"><label>비밀번호</label><input id="loginPw" type="password" autocomplete="current-password"></div><button type="button" class="btn full" onclick="guardedLogin(this)">접속하기</button><button type="button" class="btn secondary full" onclick="goLanding()" style="margin-top:8px">첫 화면으로 돌아가기</button><div class="demo-info">※ 비밀번호를 변경하신 경우에도 명단 갱신 시 휴대폰 번호 뒷자리 4자리로 초기화될 수 있습니다. 로그인이 되지 않을 경우 먼저 휴대폰 번호 뒷자리 4자리로 다시 시도해 주세요.</div></div></section></div>`;
 }
 
 async function login() {
@@ -92,8 +92,20 @@ async function login() {
   toast(errorMessage);
 }
 
-function guardedLogin() {
-  return login();
+async function guardedLogin(button) {
+  const oldText = button?.textContent || '접속하기';
+  if (button) {
+    button.disabled = true;
+    button.textContent = '접속 중...';
+  }
+  try {
+    return await login();
+  } finally {
+    if (button && document.body.contains(button)) {
+      button.disabled = false;
+      button.textContent = oldText;
+    }
+  }
 }
 
 function logout() {

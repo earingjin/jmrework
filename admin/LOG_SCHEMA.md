@@ -18,7 +18,7 @@
   "errorType": "NONE | JSON_PARSE_ERROR | RATE_LIMIT | ...",
   "retryCount": 0,
   "retryReason": "NONE | JSON_PARSE_ERROR | RATE_LIMIT | ...",
-  "recoveryType": "NONE | CODE_REPAIR | AI_JSON_REPAIR | FULL_REGENERATION | RETRY_SUCCESS",
+  "recoveryType": "NONE | CODE_REPAIR | AI_JSON_REPAIR | FULL_REGENERATION | MODEL_FALLBACK | RETRY_SUCCESS",
   "tokenUsage": {
     "promptTokens": 0,
     "outputTokens": 0,

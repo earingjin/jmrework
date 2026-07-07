@@ -115,7 +115,7 @@
     if (nextError && nextError !== REPORT_ERROR_TYPE.NONE) {
       ctx.errorType = ctx.errorType === REPORT_ERROR_TYPE.JSON_PARSE_ERROR && nextError === REPORT_ERROR_TYPE.JSON_REPAIR_FAILED ? nextError : (ctx.errorType || nextError);
     }
-    ctx.modelName = ctx.modelName || detail.modelName;
+    if (detail.modelName) ctx.modelName = detail.modelName;
     if (detail.recoveryType && detail.recoveryType !== REPORT_RECOVERY_TYPE.NONE) {
       ctx.recoveryType = detail.recoveryType;
       if (detail.recoveryType === REPORT_RECOVERY_TYPE.RETRY_SUCCESS) ctx.retryRecoveryAttempted = true;
@@ -175,11 +175,11 @@
         finalStatus,
         reportType,
         durationMs: Date.now() - startedAt,
-        modelName: ctx.modelName || result?.modelName || modelName,
+        modelName: result?.modelName || ctx.modelName || modelName,
         errorType: ctx.errorType || REPORT_ERROR_TYPE.NONE,
         retryCount: ctx.retryCount || appState.reportGenerationRetryCount || 0,
         retryReason: ctx.retryReason || REPORT_RETRY_REASON.NONE,
-        recoveryType: ctx.retryRecoveryAttempted ? REPORT_RECOVERY_TYPE.RETRY_SUCCESS : (ctx.recoveryType || REPORT_RECOVERY_TYPE.NONE),
+        recoveryType: ctx.recoveryType || (ctx.retryRecoveryAttempted ? REPORT_RECOVERY_TYPE.RETRY_SUCCESS : REPORT_RECOVERY_TYPE.NONE),
         tokenUsage: result?.tokenUsage,
         ...user
       });
