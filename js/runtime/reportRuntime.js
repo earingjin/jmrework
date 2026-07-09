@@ -1,6 +1,15 @@
 (function () {
   const appState = window.state;
   const reportTypes = window.REPORT_TYPES || { SUCCESS: 'success' };
+  const REPORT_GENERATION_MESSAGES = [
+    '리포트 생성 중...',
+    '검사 결과를 정리하고 있습니다...',
+    '상담에 활용할 핵심 내용을 뽑고 있습니다...',
+    '입력하신 시사점을 함께 반영하고 있습니다...',
+    '리포트 문장을 다듬고 있습니다...'
+  ];
+  let reportGenerationMessageTimer = null;
+  let reportGenerationMessageIndex = 0;
 
   function reportGenerationUser() {
     const account = (appState.data.accounts || []).find((item) => item.id === appState.user?.accountId);
@@ -76,12 +85,43 @@
         overlay = document.createElement('div');
         overlay.id = 'reportGenerationOverlay';
         overlay.className = 'report-generation-overlay';
-        overlay.innerHTML = '<div class="report-generation-loader" role="status" aria-live="polite"><span class="report-orbit" aria-hidden="true"><i></i><i></i><i></i></span><strong>리포트 생성 중...</strong></div>';
+        overlay.innerHTML = '<div class="report-generation-loader" role="status" aria-live="polite"><span class="report-orbit" aria-hidden="true"><i></i><i></i><i></i></span><strong data-report-generation-message>리포트 생성 중...</strong></div>';
         document.body.appendChild(overlay);
       }
       return;
     }
     if (overlay) overlay.remove();
+  }
+
+  function reportGenerationMessage() {
+    return REPORT_GENERATION_MESSAGES[reportGenerationMessageIndex % REPORT_GENERATION_MESSAGES.length];
+  }
+
+  function updateReportGenerationMessage() {
+    const message = reportGenerationMessage();
+    const overlayMessage = document.querySelector('#reportGenerationOverlay [data-report-generation-message]');
+    if (overlayMessage) overlayMessage.textContent = message;
+    document.querySelectorAll('button.report-generating').forEach((btn) => {
+      btn.innerHTML = `<span class="report-spinner" aria-hidden="true"></span><span data-report-generation-message>${message}</span>`;
+    });
+  }
+
+  function startReportGenerationMessages() {
+    stopReportGenerationMessages();
+    reportGenerationMessageIndex = 0;
+    updateReportGenerationMessage();
+    setTimeout(updateReportGenerationMessage, 0);
+    reportGenerationMessageTimer = setInterval(() => {
+      reportGenerationMessageIndex += 1;
+      updateReportGenerationMessage();
+    }, 2600);
+  }
+
+  function stopReportGenerationMessages() {
+    if (reportGenerationMessageTimer) {
+      clearInterval(reportGenerationMessageTimer);
+      reportGenerationMessageTimer = null;
+    }
   }
 
   function setReportGenerationUi(isGenerating) {
@@ -92,7 +132,6 @@
         btn.dataset.originalHtml = btn.innerHTML;
         btn.disabled = true;
         btn.classList.add('report-generating');
-        btn.innerHTML = '<span class="report-spinner" aria-hidden="true"></span><span>리포트 생성 중...</span>';
       } else {
         btn.disabled = false;
         btn.classList.remove('report-generating');
@@ -102,6 +141,8 @@
         }
       }
     });
+    if (isGenerating) startReportGenerationMessages();
+    else stopReportGenerationMessages();
   }
 
   function reportRetryReason(errorType) {
