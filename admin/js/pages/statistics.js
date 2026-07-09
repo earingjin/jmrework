@@ -211,6 +211,7 @@ function statisticsData() {
   const succeeded = completed.filter((event) => reportFinalStatus(event) === REPORT_FINAL_STATUS.SUCCESS);
   const recovered = completed.filter((event) => reportFinalStatus(event) === REPORT_FINAL_STATUS.RECOVERED_SUCCESS);
   const failed = completed.filter((event) => reportFinalStatus(event) === REPORT_FINAL_STATUS.FAILED);
+  const recoveryFailed = failed.filter((event) => reportRecoveryType(event) && reportRecoveryType(event) !== REPORT_RECOVERY_TYPE.NONE);
   const totalTokens = [...succeeded, ...recovered].reduce((sum, event) => sum + tokenTotal(event), 0);
   const tokenRecorded = completed.filter((event) => tokenTotal(event) > 0);
   const tokenSuccessCount = [...succeeded, ...recovered].filter((event) => tokenTotal(event) > 0).length;
@@ -246,7 +247,7 @@ function statisticsData() {
   const typeData = usageGroupData(events, (event) => event?.payload?.reportType || "unknown", reportTypeName);
   const modelData = usageGroupData(events, (event) => event?.payload?.modelName || "unknown");
   const branchData = usageGroupData(events, (event) => event?.payload?.branch || accountBranch(event?.payload?.counselorId));
-  return { range, events, geminiErrors, started, succeeded, recovered, failed, completed, totalTokens, tokenRecorded, averageTokens, totalRetries, averageDuration, errorCounts, errorStats, recoveryCounts, recoveryStats, typeData, modelData, branchData };
+  return { range, events, geminiErrors, started, succeeded, recovered, failed, recoveryFailed, completed, totalTokens, tokenRecorded, averageTokens, totalRetries, averageDuration, errorCounts, errorStats, recoveryCounts, recoveryStats, typeData, modelData, branchData };
 }
 
 function usageExportRows(data, label) {
@@ -273,6 +274,7 @@ function statisticsExportSheets() {
     "전체 생성 건수": totalAttempts,
     "최종 성공 건수": data.succeeded.length,
     "복구 성공 건수": data.recovered.length,
+    "복구 실패 건수": data.recoveryFailed.length,
     "최종 실패 건수": data.failed.length,
     "성공률(%)": Number((totalAttempts ? (data.succeeded.length + data.recovered.length) / totalAttempts * 100 : 0).toFixed(1)),
     "총 토큰 사용량": data.totalTokens,
@@ -296,7 +298,7 @@ function statisticsExportSheets() {
     "발생 건수": stat.count,
     "최종 성공 건수": stat.success,
     "복구 성공 건수": stat.recovered,
-    "최종 실패 건수": stat.failed,
+    "복구 실패 건수": stat.failed,
     "복구 성공률(%)": Number((stat.count ? stat.recovered / stat.count * 100 : 0).toFixed(1)),
     "총 토큰": stat.tokens,
     "재시도 횟수": stat.retries,
@@ -350,7 +352,7 @@ function downloadStatisticsExcel(kind = "all") {
 
 function statisticsSection() {
   const data = statisticsData();
-  const { range, geminiErrors, started, succeeded, recovered, failed, totalTokens, tokenRecorded, averageTokens, totalRetries, averageDuration, errorCounts, errorStats, recoveryCounts, recoveryStats } = data;
+  const { range, geminiErrors, started, succeeded, recovered, failed, recoveryFailed, totalTokens, tokenRecorded, averageTokens, totalRetries, averageDuration, errorCounts, errorStats, recoveryCounts, recoveryStats } = data;
   const totalAttempts = started.length || data.completed.length;
   const errorRows = Object.entries(errorStats)
     .sort((a, b) => b[1].count - a[1].count)
@@ -364,7 +366,7 @@ function statisticsSection() {
     .map(([type, stat]) => `<tr><td>${escapeHtml(type)}</td><td><strong>${numberText(stat.count)}건</strong></td><td>${numberText(stat.success)}건</td><td>${numberText(stat.recovered)}건</td><td>${numberText(stat.failed)}건</td><td>${percentText(stat.recovered, stat.count)}</td><td>${numberText(stat.tokens)}</td><td>${numberText(stat.retries)}</td><td>${durationText(stat.count ? stat.duration / stat.count : 0)}</td></tr>`)
     .join("");
   const recoveryContents = recoveryRows
-    ? `<div class="table-wrap"><table><thead><tr><th>복구 유형</th><th>발생 건수</th><th>최종 성공 건수</th><th>복구 성공 건수</th><th>최종 실패 건수</th><th>복구 성공률</th><th>총 토큰</th><th>재시도 횟수</th><th>평균 시간</th></tr></thead><tbody>${recoveryRows}</tbody></table></div>`
+    ? `<div class="table-wrap"><table><thead><tr><th>복구 유형</th><th>발생 건수</th><th>최종 성공 건수</th><th>복구 성공 건수</th><th>복구 실패 건수</th><th>복구 성공률</th><th>총 토큰</th><th>재시도 횟수</th><th>평균 시간</th></tr></thead><tbody>${recoveryRows}</tbody></table></div>`
     : '<div class="empty">기록된 복구 유형이 없습니다.</div>';
 
   const typeRows = usageGroupRows(data.typeData);
@@ -379,6 +381,7 @@ function statisticsSection() {
       <div class="cards">
         <div class="metric"><span>전체 생성 건수</span><strong>${numberText(totalAttempts)}</strong></div>
         <div class="metric"><span>최종 성공 / 복구 성공</span><strong>${numberText(succeeded.length)} / ${numberText(recovered.length)}</strong></div>
+        <div class="metric"><span>복구 실패</span><strong>${numberText(recoveryFailed.length)}</strong></div>
         <div class="metric"><span>최종 실패</span><strong>${numberText(failed.length)}</strong></div>
         <div class="metric"><span>성공률</span><strong>${percentText(succeeded.length + recovered.length, totalAttempts)}</strong></div>
         <div class="metric"><span>총 토큰 사용량</span><strong>${numberText(totalTokens)}</strong></div>
