@@ -1,9 +1,13 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
 const db = require('../lib/db');
 const { adminRequired, authRequired } = require('../lib/auth');
 
 const router = express.Router();
 const STATUSES = new Set(['active', 'hidden', 'archived']);
+let localSuccessCasesCache = null;
 
 const FIELD_MAP = Object.freeze({
   sourceOrg: '출처기관',
@@ -68,6 +72,14 @@ function normalizeColumnName(value) {
 
 function cleanText(value, max = 5000) {
   return String(value ?? '').trim().slice(0, max);
+}
+
+function localSuccessCases() {
+  if (localSuccessCasesCache) return localSuccessCasesCache;
+  const filePath = path.join(__dirname, '..', 'data', 'successData.js');
+  const source = fs.readFileSync(filePath, 'utf8');
+  localSuccessCasesCache = vm.runInNewContext(`${source}\nSUCCESS_CASE_DB;`, {}, { filename: filePath });
+  return Array.isArray(localSuccessCasesCache) ? localSuccessCasesCache : [];
 }
 
 function maskPersonName(value) {
@@ -193,12 +205,65 @@ function searchScore(row, query) {
   }, 0);
 }
 
+function localSuccessScore(row, query) {
+  const normalizedQuery = String(query || '').trim().toLowerCase();
+  if (!normalizedQuery) return 0;
+  const compactQuery = normalizedQuery.replace(/\s+/g, '');
+  const fields = [
+    [row['현재직업'], 30],
+    [row['핵심키워드'], 20],
+    [row['보유자격교육'], 14],
+    [row['이전경력'], 12],
+    [row['준비방법'], 12],
+    [row['주요활동'], 8],
+    [row['전환유형'], 8],
+    [row['추천대상'], 8],
+    [row['성공요인'], 6]
+  ];
+  return fields.reduce((score, [value, weight]) => {
+    const text = String(value || '').toLowerCase();
+    const compact = text.replace(/\s+/g, '');
+    if (text.includes(normalizedQuery) || compact.includes(compactQuery)) return score + weight;
+    return score;
+  }, 0);
+}
+
+function publicLocalCase(row) {
+  return {
+    '사례ID': cleanText(row['사례ID'], 120),
+    '출처기관': cleanText(row['출처기관'], 200),
+    '출처연도': row['출처연도'] || '',
+    '데이터 일련번호': cleanText(row['데이터 일련번호'], 120),
+    '현재직업': cleanText(row['현재직업'], 500),
+    '이전경력': cleanText(row['이전경력']),
+    '보유자격교육': cleanText(row['보유자격교육']),
+    '준비방법': cleanText(row['준비방법']),
+    '주요활동': cleanText(row['주요활동']),
+    '전환유형': cleanText(row['전환유형'], 300),
+    '추천대상': cleanText(row['추천대상']),
+    '핵심키워드': cleanText(row['핵심키워드']),
+    '성공요인': cleanText(row['성공요인']),
+    '공개가능여부': cleanText(row['공개가능여부'], 120),
+    '원본시트': cleanText(row['원본시트'], 300),
+    '원본번호': row['원본번호'] || '',
+    '출처문구': cleanText(row['출처문구'])
+  };
+}
+
+function searchLocalSuccessCases(query, limit) {
+  return localSuccessCases()
+    .map((row, index) => ({ id: row['사례ID'] || `local-${index}`, case: publicLocalCase(row), score: localSuccessScore(row, query) }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || String(a.case['현재직업']).localeCompare(String(b.case['현재직업']), 'ko'))
+    .slice(0, limit);
+}
+
 router.get('/success-cases/search', authRequired, async (req, res) => {
   try {
-    if (!db.enabled) return res.json({ cases: [] });
     const query = cleanText(req.query.q || req.query.query || '', 200);
     const limit = Math.min(Math.max(Number(req.query.limit) || 12, 1), 50);
     if (!query) return res.json({ cases: [] });
+    if (!db.enabled) return res.json({ cases: searchLocalSuccessCases(query, limit) });
     const terms = query.split(/\s+/).filter(Boolean).slice(0, 6);
     const params = terms.map((term) => `%${term}%`);
     const where = params.map((_, index) => `search_text ILIKE $${index + 1}`).join(' OR ');

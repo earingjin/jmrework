@@ -1,6 +1,19 @@
-if (typeof SUCCESS_CASE_SEARCH_ASSIST !== 'object' || !SUCCESS_CASE_SEARCH_ASSIST) {
-  throw new Error('SUCCESS_CASE_SEARCH_ASSIST must be loaded before successUiData.js');
-}
+var SUCCESS_CASE_SEARCH_ASSIST = typeof SUCCESS_CASE_SEARCH_ASSIST === 'object' && SUCCESS_CASE_SEARCH_ASSIST
+  ? SUCCESS_CASE_SEARCH_ASSIST
+  : {
+    searchFields: [
+      { key: '현재직업', weight: 6 },
+      { key: '이전경력', weight: 4 },
+      { key: '보유자격교육', weight: 5 },
+      { key: '준비방법', weight: 4 },
+      { key: '주요활동', weight: 3 },
+      { key: '전환유형', weight: 3 },
+      { key: '추천대상', weight: 3 },
+      { key: '핵심키워드', weight: 5 }
+    ],
+    relatedKeywords: {},
+    certInfo: {}
+  };
 
 SUCCESS_CASE_SEARCH_ASSIST.ui = {
   formIntroTitle: '성공사례 DB 기반 상담 분석',

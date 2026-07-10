@@ -18,6 +18,34 @@
     localStorage.setItem('GEMINI_MODEL', model);
   }
 
+  function geminiEndpoint() {
+    return '/api/gemini';
+  }
+
+  function reportGeminiEndpoint() {
+    return '/api/report-gemini';
+  }
+
+  async function generateContent({ model, body, request = fetch }) {
+    const response = await request(geminiEndpoint(), {
+      method: 'POST',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ model, ...body })
+    });
+    response.geminiModelName = response.headers?.get?.('X-Gemini-Model') || model;
+    return response;
+  }
+
+  async function generateReportContent({ model, reportType, variant, input, keyword, matchedCases, participant, insight, useSearch, request = fetch }) {
+    const response = await request(reportGeminiEndpoint(), {
+      method: 'POST',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ model, reportType, variant, input, keyword, matchedCases, participant, insight, useSearch })
+    });
+    response.geminiModelName = response.headers?.get?.('X-Gemini-Model') || model;
+    return response;
+  }
+
   function geminiModelCandidates(scope = 'default', primaryModel = '') {
     const primary = primaryModel || getGeminiModel(scope);
     return Array.from(new Set([primary, 'gemini-2.5-flash', 'gemini-2.5-flash-lite'].filter(Boolean)));
@@ -122,6 +150,12 @@
     DEFAULT_GEMINI_MODEL,
     GEMINI_TEMPORARY_ERROR_MESSAGE,
     GEMINI_RATE_LIMIT_ERROR_MESSAGE,
+    AI_GATEWAY: Object.freeze({
+      geminiEndpoint,
+      reportGeminiEndpoint,
+      generateContent,
+      generateReportContent
+    }),
     getGeminiModel,
     setGeminiModel,
     geminiModelCandidates,
