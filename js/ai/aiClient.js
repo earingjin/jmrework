@@ -48,7 +48,7 @@
 
   function geminiModelCandidates(scope = 'default', primaryModel = '') {
     const primary = primaryModel || getGeminiModel(scope);
-    return Array.from(new Set([primary, 'gemini-2.5-flash', 'gemini-2.5-flash-lite'].filter(Boolean)));
+    return Array.from(new Set([primary, 'gemini-2.5-flash', 'gemini-3-flash'].filter(Boolean)));
   }
 
   function wait(ms) {

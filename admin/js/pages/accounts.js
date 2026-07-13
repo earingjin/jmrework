@@ -16,6 +16,7 @@ function adminSection() {
       </div>
       ${accountImportPanel()}
       ${accountForm()}
+      ${adminPasswordPanel()}
       ${accountList(rows)}
     </section>`;
 }
@@ -115,6 +116,61 @@ function accountImportPanel() {
         ${summary}
       </div>
     </div>`;
+}
+
+function adminPasswordPanel() {
+  return `
+    <div class="panel">
+      <div class="panel-head"><h3>관리자 비밀번호 변경</h3></div>
+      <div class="panel-body">
+        <div class="grid-3">
+          <div class="field"><label>현재 비밀번호</label><input id="adminCurrentPw" type="password" autocomplete="current-password"></div>
+          <div class="field"><label>새 비밀번호</label><input id="adminNewPw" type="password" autocomplete="new-password" placeholder="4자 이상"></div>
+          <div class="field"><label>새 비밀번호 확인</label><input id="adminNewPw2" type="password" autocomplete="new-password"></div>
+        </div>
+        <div class="actions"><button class="btn" data-action="change-admin-password">비밀번호 변경</button></div>
+      </div>
+    </div>`;
+}
+
+async function changeAdminPassword() {
+  const currentPassword = val("adminCurrentPw");
+  const newPassword = val("adminNewPw");
+  const confirmPassword = val("adminNewPw2");
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    toast("현재 비밀번호와 새 비밀번호를 모두 입력해주세요.");
+    return false;
+  }
+  if (newPassword.length < 4) {
+    toast("새 비밀번호는 4자 이상이어야 합니다.");
+    return false;
+  }
+  if (newPassword !== confirmPassword) {
+    toast("새 비밀번호 확인이 일치하지 않습니다.");
+    return false;
+  }
+  try {
+    const response = await authFetch("/api/auth/password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      toast(data?.error?.message || "비밀번호 변경에 실패했습니다.");
+      return false;
+    }
+    ["adminCurrentPw", "adminNewPw", "adminNewPw2"].forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) element.value = "";
+    });
+    toast("관리자 비밀번호가 변경되었습니다.");
+    return true;
+  } catch (error) {
+    console.error("changeAdminPassword error", error);
+    toast("서버와 통신하는 중 오류가 발생했습니다.");
+    return false;
+  }
 }
 
 function accountList(rows) {

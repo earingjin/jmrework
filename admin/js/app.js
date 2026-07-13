@@ -50,6 +50,7 @@ const actions = {
   "download-statistics": (id) => downloadStatisticsExcel(id),
   "save-account": () => saveAccount() && render(),
   "reset-account": () => resetAccountForm(),
+  "change-admin-password": async () => { await changeAdminPassword(); },
   "fill-account": (id) => fillAccountForm(id),
   "toggle-account": (id) => toggleAccountStatus(id) && render(),
   "delete-account": async (id) => { const ok = await deleteAccount(id); if (ok) render(); },

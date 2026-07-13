@@ -589,6 +589,10 @@ app.use('/prompts', (_req, res) => {
   res.sendStatus(404);
 });
 
+app.use(['/lib', '/routes', '/logs', '/migrations', '/scripts', '/docs'], (_req, res) => {
+  res.sendStatus(404);
+});
+
 app.get(['/server.js', '/package.json', '/package-lock.json', '/.env.example', '/aiGateway.js', '/data/successData.js', '/data/successUiData.js'], (_req, res) => {
   res.sendStatus(404);
 });
