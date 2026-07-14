@@ -52,6 +52,10 @@ function shellTemplate() {
 function setSection(id) {
   if (state.active !== id) pushHistory();
   state.active = id;
+  if (id !== 'modules') {
+    state.currentReport = null;
+    state.editMode = false;
+  }
   render();
 }
 

@@ -3,7 +3,7 @@
   const reportTypes = window.REPORT_TYPES || { SUCCESS: 'success' };
   const REPORT_GENERATION_MESSAGES = [
     '리포트 생성 중...',
-    '검사 결과를 정리하고 있습니다...',
+    '작성 순서를 정리하고 있습니다...',
     '상담에 활용할 핵심 내용을 뽑고 있습니다...',
     '입력하신 시사점을 함께 반영하고 있습니다...',
     '리포트 문장을 다듬고 있습니다...'

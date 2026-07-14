@@ -11,6 +11,8 @@ function goLogin() {
 function goLanding() {
   pushHistory();
   state.view = 'landing';
+  state.currentReport = null;
+  state.editMode = false;
   loadPublicNotices().finally(() => render());
 }
 

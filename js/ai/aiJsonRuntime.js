@@ -14,6 +14,15 @@
 
   function isModelFallbackEligible(err) {
     const errorType = jsonRuntimeErrorType(err);
+    const msg = String(err?.apiMessage || err?.message || '').toLowerCase();
+    const isModelRequestError = err?.status === 404 ||
+      (err?.status === 400 && (
+        msg.includes('model') ||
+        msg.includes('not found') ||
+        msg.includes('not supported') ||
+        msg.includes('unsupported') ||
+        msg.includes('invalid model')
+      ));
     return [
       REPORT_ERROR_TYPE.JSON_PARSE_ERROR,
       REPORT_ERROR_TYPE.JSON_REPAIR_FAILED,
@@ -23,7 +32,7 @@
       REPORT_ERROR_TYPE.SERVICE_UNAVAILABLE,
       REPORT_ERROR_TYPE.NETWORK_ERROR,
       REPORT_ERROR_TYPE.TIMEOUT
-    ].includes(errorType) || err?.status === 400 || err?.status === 404;
+    ].includes(errorType) || isModelRequestError;
   }
 
   function isLightJsonParseStage(stage = '') {

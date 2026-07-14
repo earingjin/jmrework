@@ -248,8 +248,8 @@ function pageSnapshot() {
     activeModule: state.activeModule,
     selectedParticipantId: state.selectedParticipantId,
     selectedNoticeId: state.selectedNoticeId,
-    currentReport: state.currentReport ? { ...state.currentReport } : null,
-    editMode: state.editMode,
+    currentReport: null,
+    editMode: false,
     reportMenuOpen: state.reportMenuOpen
   };
 }
