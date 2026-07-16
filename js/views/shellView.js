@@ -38,6 +38,8 @@ function goDashboard() {
 function activeMainSectionHtml() {
   if (state.active === 'modules') return modulesSection();
   if (state.active === 'notices') return noticesSection();
+  if (state.active === 'ai-hub') return aiHubSection();
+  if (state.active === 'community') return communitySection();
   if (state.active === 'account') return accountSection();
   if (state.active === 'admin') return adminStatsSection();
   return dashboardSection();
@@ -46,7 +48,7 @@ function activeMainSectionHtml() {
 function shellTemplate() {
   const sideBrand = `<div class="side-brand" role="button" tabindex="0" aria-label="메인 대시보드로 이동" onclick="goDashboard()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();goDashboard()}"><img src="${BRAND_LOGO}" alt="${BRAND_NAME}" class="sidebar-logo"><div class="title">${BRAND_NAME}</div><div class="sub">${BRAND_SUBTITLE}</div><div class="role-badge">${escapeHtml(state.user.name)} · ${escapeHtml(state.user.role)}</div></div>`;
   const reportMenuStyle = state.reportMenuOpen ? '' : 'style="display:none"';
-  return `<div class="shell"><aside class="sidebar no-print">${sideBrand}<nav class="nav"><button class="${state.active === 'modules' ? 'active' : ''}" onclick="toggleReportMenu()"><span>리포트 생성</span><span>${state.reportMenuOpen ? '⌃' : '⌄'}</span></button><div class="subnav" ${reportMenuStyle}>${reportSubNavHtml()}</div>${navButton('account', '내 계정')}</nav><div style="margin-top:20px;padding:10px"><button class="btn light full" onclick="goLanding()">홈으로</button><button class="btn secondary full" onclick="logout()" style="margin-top:8px">로그아웃</button></div><div class="sidebar-copyright">© 2026 JMCAREER. All Rights Reserved.</div></aside><main class="main">${activeMainSectionHtml()}</main></div>`;
+  return `<div class="shell"><aside class="sidebar no-print">${sideBrand}<nav class="nav"><button class="${state.active === 'modules' ? 'active' : ''}" onclick="toggleReportMenu()"><span>리포트 생성</span><span>${state.reportMenuOpen ? '⌃' : '⌄'}</span></button><div class="subnav" ${reportMenuStyle}>${reportSubNavHtml()}</div>${navButton('notices', '공지사항')}${navButton('ai-hub', 'AI 허브 (준비중)')}${navButton('community', '한 줄 메모')}${navButton('account', '내 계정')}</nav><div style="margin-top:20px;padding:10px"><button class="btn light full" onclick="goLanding()">홈으로</button><button class="btn secondary full" onclick="logout()" style="margin-top:8px">로그아웃</button></div><div class="sidebar-copyright">© 2026 JMCAREER. All Rights Reserved.</div></aside><main class="main">${activeMainSectionHtml()}</main></div>`;
 }
 
 function setSection(id) {
@@ -55,6 +57,14 @@ function setSection(id) {
   if (id !== 'modules') {
     state.currentReport = null;
     state.editMode = false;
+  }
+  if (id === 'community') {
+    loadCommunityPosts().finally(() => render());
+    return;
+  }
+  if (id === 'notices') {
+    loadNotices().finally(() => render());
+    return;
   }
   render();
 }

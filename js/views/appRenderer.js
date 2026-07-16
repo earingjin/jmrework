@@ -1,4 +1,5 @@
 function render() {
+  saveAppLocation();
   const app = document.getElementById('app');
   if (state.view === 'landing') {
     app.innerHTML = renderLanding();

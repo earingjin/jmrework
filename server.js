@@ -464,6 +464,14 @@ try {
   console.error('Could not mount success case routes', e);
 }
 
+// mount community routes (provides /api/community-posts for authenticated users)
+try {
+  const communityPostRoutes = require('./routes/communityPosts');
+  app.use('/api', communityPostRoutes);
+} catch (e) {
+  console.error('Could not mount community routes', e);
+}
+
 app.post('/api/gemini', authRequired, geminiRateLimit, async (req, res) => {
   const geminiApiKey = process.env.GEMINI_API_KEY;
   const model = typeof req.body?.model === 'string' ? req.body.model.trim() : '';

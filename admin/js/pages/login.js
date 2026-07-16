@@ -11,13 +11,26 @@ function loginTemplate() {
         <div class="login-box">
           <h2>관리자 로그인</h2>
           <p>관리자 계정으로 접속해주세요.</p>
-          <div class="field"><label>아이디</label><input id="loginId" value="admin"></div>
-          <div class="field"><label>비밀번호</label><input id="loginPw" type="password" value="admin123"></div>
+          <div class="field"><label>아이디</label><input id="loginId" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore></div>
+          <div class="field"><label>비밀번호</label><input id="loginPw" type="password" autocomplete="new-password" data-lpignore="true" data-1p-ignore></div>
           <button class="btn full" data-action="login">접속하기</button>
           <div class="demo-info"></div>
         </div>
       </section>
     </div>`;
+}
+
+function clearLoginAutofill() {
+  const clear = () => {
+    const loginId = document.getElementById("loginId");
+    const loginPw = document.getElementById("loginPw");
+    if (loginId) loginId.value = "";
+    if (loginPw) loginPw.value = "";
+  };
+  clear();
+  requestAnimationFrame(clear);
+  setTimeout(clear, 100);
+  setTimeout(clear, 500);
 }
 
 function isAdminRole(role) {

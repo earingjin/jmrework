@@ -29,6 +29,7 @@ function activateSection(id) {
 
 function render() {
   app.innerHTML = state.view === "login" ? loginTemplate() : shellTemplate();
+  if (state.view === "login") clearLoginAutofill();
   if (state.view === "app") activateSection(state.active);
 }
 

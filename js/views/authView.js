@@ -31,6 +31,30 @@ function goAppHome() {
   loadNotices().finally(() => render());
 }
 
+function goProtectedSection(section) {
+  if (!state.user) {
+    pushHistory();
+    state.pendingSection = section;
+    state.view = 'login';
+    render();
+    return;
+  }
+  pushHistory();
+  state.view = 'app';
+  state.active = section;
+  state.currentReport = null;
+  state.editMode = false;
+  if (section === 'notices') {
+    loadNotices().finally(() => render());
+    return;
+  }
+  if (section === 'community') {
+    loadCommunityPosts().finally(() => render());
+    return;
+  }
+  render();
+}
+
 function loginTemplate() {
   const content = LANDING_CONTENT;
   return `<div class="login-screen"><section class="login-hero"><div class="real-hero-copy"><span class="real-hero-badge">${content.hero.badge}</span><h1>${content.hero.title}</h1><p>${content.hero.description}</p></div><div class="real-hero-image"><img src="${LANDING_IMAGES.hero}" alt="${content.hero.imageAlt}"></div></section><section class="login-panel"><div class="login-box"><div class="small">제이엠커리어 임직원 전용(Beta)</div><h2>LOGIN</h2><p>발급받은 상담사 아이디와 비밀번호로 접속합니다.</p><div class="field"><label>아이디</label><input id="loginId" autocomplete="username"></div><div class="field"><label>비밀번호</label><input id="loginPw" type="password" autocomplete="current-password"></div><button type="button" class="btn full" onclick="guardedLogin(this)">접속하기</button><button type="button" class="btn secondary full" onclick="goLanding()" style="margin-top:8px">첫 화면으로 돌아가기</button><div class="demo-info">※ 비밀번호를 변경하신 경우에도 명단 갱신 시 휴대폰 번호 뒷자리 4자리로 초기화될 수 있습니다. 로그인이 되지 않을 경우 먼저 휴대폰 번호 뒷자리 4자리로 다시 시도해 주세요.</div></div></section></div>`;
@@ -77,11 +101,14 @@ async function login() {
           state.data.accounts.push(cached);
         }
         state.user = { accountId: serverAccount.id, loginId: cached.loginId, name: cached.name, role: cached.role };
+        localStorage.setItem(AUTH_ACCOUNT_STORAGE_KEY, JSON.stringify(cached));
         pushHistory();
         state.view = 'app';
-        state.active = APP_ROLE === 'admin' ? 'admin' : 'dashboard';
+        state.active = state.pendingSection || (APP_ROLE === 'admin' ? 'admin' : 'dashboard');
+        state.pendingSection = null;
         if (!state.selectedParticipantId && state.data.participants[0]) state.selectedParticipantId = state.data.participants[0].id;
         await loadNotices();
+        if (state.active === 'community') await loadCommunityPosts();
         persist();
         render();
         return;
@@ -112,6 +139,8 @@ async function guardedLogin(button) {
 
 function logout() {
   localStorage.removeItem(AUTH_TOKEN_KEY);
+  localStorage.removeItem(AUTH_ACCOUNT_STORAGE_KEY);
+  localStorage.removeItem(APP_LOCATION_STORAGE_KEY);
   state.user = null;
   resetSensitiveSessionData();
   state.view = 'landing';

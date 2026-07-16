@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const accountStore = require('../lib/accountStore');
-const { adminRequired, authRequired, createRateLimit } = require('../lib/auth');
+const { adminRequired, authRequired, createRateLimit, normalizeRole } = require('../lib/auth');
 
 const router = express.Router();
 const loginRateLimit = createRateLimit({
@@ -12,6 +12,32 @@ const loginRateLimit = createRateLimit({
 });
 
 function unauthorized(res, msg = 'unauthorized') { return res.status(401).json({ error: { message: msg } }); }
+
+// GET /api/auth/me
+router.get('/auth/me', authRequired, async (req, res) => {
+  try {
+    const account = await accountStore.findAccountById(req.user.accountId);
+    if (!account) return unauthorized(res, 'Account not found');
+    if (account.status === 'inactive') return unauthorized(res, 'Inactive account');
+    return res.json({
+      account: {
+        id: account.id,
+        loginId: account.login_id || account.loginId,
+        name: account.name,
+        role: account.role,
+        roleKey: normalizeRole(account.role),
+        branch: account.branch,
+        status: account.status || 'active',
+        created_at: account.created_at || account.createdAt || null,
+        last_login_at: account.last_login_at || account.lastLoginAt || null,
+        login_count: Number(account.login_count ?? account.loginCount) || 0
+      }
+    });
+  } catch (err) {
+    console.error('[auth-me-error]', err);
+    return res.status(500).json({ error: { message: 'Could not load current account' } });
+  }
+});
 
 // POST /api/auth/login
 router.post('/auth/login', loginRateLimit, async (req, res) => {

@@ -1,5 +1,10 @@
 function landingNavLinksHtml() {
-  return '<button class="btn" onclick="goAppHome()">대시보드로 이동</button>';
+  return `
+    <button class="landing-nav-link-button" onclick="goProtectedSection('notices')">공지사항</button>
+    <button class="landing-nav-link-button" onclick="goProtectedSection('modules')">리포트 생성</button>
+    <button class="landing-nav-link-button" onclick="goProtectedSection('ai-hub')">AI허브</button>
+    <button class="landing-nav-link-button" onclick="goProtectedSection('community')">한 줄 메모</button>
+    <button class="btn" onclick="goAppHome()">대시보드로 이동</button>`;
 }
 
 function landingAuthButtonHtml() {
@@ -86,7 +91,7 @@ function landingNoticeBoardHtml() {
       </div>
       <div class="landing-notice-list">
         ${notices.length ? notices.map((notice) => `
-          <button type="button" class="landing-notice-row" onclick="openLandingNotice('${escapeHtml(notice.id)}')">
+          <button type="button" class="landing-notice-row" onclick="goProtectedSection('notices')">
             <span>${notice.pinned ? '[고정] ' : ''}${escapeHtml(notice.title)}</span>
             <small>${escapeHtml(landingNoticeDateText(notice.updatedAt || notice.createdAt))}</small>
           </button>`).join('') : '<div class="landing-notice-empty">등록된 공지사항이 없습니다.</div>'}
