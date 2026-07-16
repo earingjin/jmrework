@@ -1,4 +1,6 @@
 const ACCOUNT_STORAGE_KEY = 'ai_career_accounts_v1';
+const AUTH_ACCOUNT_STORAGE_KEY = 'REWORK_AUTH_ACCOUNT';
+const APP_LOCATION_STORAGE_KEY = 'REWORK_APP_LOCATION';
 const LEGACY_STORAGE_KEY = 'ai_career_report_index_v2';
 const REPORT_TYPES = {
   SUCCESS: 'success'
@@ -70,6 +72,8 @@ const state = {
   activeModule: defaultReportType(),
   selectedParticipantId: null,
   selectedNoticeId: null,
+  pendingSection: null,
+  editingCommunityPostId: null,
   currentReport: null,
   editMode: false,
   reportMenuOpen: true,
@@ -87,7 +91,12 @@ const state = {
       career: '',
       memo: '',
       createdAt: today()
-    }]
+    }],
+    aiHubItems: [
+      { id: 'hub_gem_report', type: 'GEM', title: '직업선호도 리포트 작성 보조', url: 'https://gemini.google.com/', description: '검사 결과를 바탕으로 상담 리포트 초안을 준비할 때 참고하는 GEM입니다.', createdAt: today() },
+      { id: 'hub_gpt_resume', type: 'GPT', title: '자기소개서 초안 코치', url: 'https://chatgpt.com/gpts', description: '경력 전환 지원서와 자기소개서 초안을 점검하는 GPT입니다.', createdAt: today() }
+    ],
+    communityPosts: []
   }
 };
 window.state = state;
@@ -143,9 +152,54 @@ function storageDefaults() {
       memo: '',
       createdAt: today()
     }],
+    aiHubItems: [
+      { id: 'hub_gem_report', type: 'GEM', title: '직업선호도 리포트 작성 보조', url: 'https://gemini.google.com/', description: '검사 결과를 바탕으로 상담 리포트 초안을 준비할 때 참고하는 GEM입니다.', createdAt: today() },
+      { id: 'hub_gpt_resume', type: 'GPT', title: '자기소개서 초안 코치', url: 'https://chatgpt.com/gpts', description: '경력 전환 지원서와 자기소개서 초안을 점검하는 GPT입니다.', createdAt: today() }
+    ],
+    communityPosts: [],
     accounts: [],
     notices: []
   };
+}
+
+function validAppSection(id) {
+  return ['dashboard', 'modules', 'notices', 'ai-hub', 'community', 'account', 'admin'].includes(String(id || ''));
+}
+
+function readSavedAppLocation() {
+  try {
+    const location = JSON.parse(localStorage.getItem(APP_LOCATION_STORAGE_KEY) || 'null');
+    return location && typeof location === 'object' ? location : null;
+  } catch {
+    return null;
+  }
+}
+
+function applySavedAppLocation(defaultActive = 'dashboard') {
+  const location = readSavedAppLocation();
+  const active = validAppSection(location?.active) ? location.active : defaultActive;
+  state.active = active;
+  state.activeModule = location?.activeModule || defaultReportType();
+  state.selectedNoticeId = location?.selectedNoticeId || null;
+  state.reportMenuOpen = typeof location?.reportMenuOpen === 'boolean'
+    ? location.reportMenuOpen
+    : active === 'modules';
+}
+
+async function loadActiveSectionData() {
+  if (state.active === 'community') await loadCommunityPosts();
+  else if (state.active === 'notices') await loadNotices();
+}
+
+function saveAppLocation() {
+  if (!state.user || !['app', 'landing'].includes(state.view)) return;
+  localStorage.setItem(APP_LOCATION_STORAGE_KEY, JSON.stringify({
+    view: state.view,
+    active: state.active,
+    activeModule: state.activeModule,
+    selectedNoticeId: state.selectedNoticeId || null,
+    reportMenuOpen: state.reportMenuOpen
+  }));
 }
 
 async function load() {
@@ -153,15 +207,127 @@ async function load() {
   clearDeprecatedAccountStorage();
   ensureDefaults();
   state.selectedParticipantId = state.data.participants[0]?.id || 'session_client';
-  state.view = 'landing';
-  await loadPublicNotices();
+  const restored = await restoreAuthenticatedUser();
+  if (!restored) {
+    state.view = 'landing';
+    await loadPublicNotices();
+  }
   persist();
+}
+
+async function restoreAuthenticatedUser() {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  if (!token) return false;
+
+  try {
+    const response = await fetch('/api/auth/me', {
+      headers: authHeaders(),
+      cache: 'no-store'
+    });
+    const data = await response.json().catch(() => null);
+
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(AUTH_ACCOUNT_STORAGE_KEY);
+      return false;
+    }
+
+    const account = data?.account;
+    if (!response.ok || !account) return restoreCachedAuthenticatedUser();
+    if (account.roleKey && account.roleKey !== APP_ROLE) {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(AUTH_ACCOUNT_STORAGE_KEY);
+      return false;
+    }
+
+    const cached = {
+      id: account.id,
+      loginId: account.login_id || account.loginId || '',
+      name: account.name || '',
+      role: normalizeAccountRole(account.role),
+      branch: account.branch || '미지정',
+      status: account.status || 'active',
+      createdAt: account.created_at || today(),
+      lastLoginAt: account.last_login_at || null,
+      loginCount: account.login_count || 0
+    };
+
+    state.data.accounts = [cached];
+    state.user = { accountId: account.id, loginId: cached.loginId, name: cached.name, role: cached.role };
+    localStorage.setItem(AUTH_ACCOUNT_STORAGE_KEY, JSON.stringify(cached));
+    if (readSavedAppLocation()?.view === 'landing') {
+      state.view = 'landing';
+      await loadPublicNotices();
+      return true;
+    }
+    state.view = 'app';
+    applySavedAppLocation('dashboard');
+    state.pendingSection = null;
+    state.currentReport = null;
+    state.editMode = false;
+    await loadNotices();
+    await loadActiveSectionData();
+    return true;
+  } catch (err) {
+    console.warn('로그인 상태 복원 실패', err);
+    return restoreCachedAuthenticatedUser();
+  }
+}
+
+async function restoreCachedAuthenticatedUser() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(AUTH_ACCOUNT_STORAGE_KEY) || 'null') || accountFromStoredToken();
+    if (!cached || normalizeAccountRole(cached.role) !== '상담사') return false;
+    state.data.accounts = [cached];
+    state.user = { accountId: cached.id, loginId: cached.loginId, name: cached.name, role: normalizeAccountRole(cached.role) };
+    if (readSavedAppLocation()?.view === 'landing') {
+      state.view = 'landing';
+      await loadPublicNotices();
+      return true;
+    }
+    state.view = 'app';
+    applySavedAppLocation('dashboard');
+    state.pendingSection = null;
+    state.currentReport = null;
+    state.editMode = false;
+    await loadNotices();
+    await loadActiveSectionData();
+    return true;
+  } catch (err) {
+    console.warn('저장된 로그인 정보 복원 실패', err);
+    return false;
+  }
+}
+
+function accountFromStoredToken() {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  if (!token) return null;
+  try {
+    const body = String(token.split('.')[1] || '').replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(body.padEnd(Math.ceil(body.length / 4) * 4, '=')));
+    if (!['counselor', 'user', '상담사'].includes(String(payload.role || '').trim().toLowerCase())) return null;
+    return {
+      id: payload.accountId || '',
+      loginId: '',
+      name: '상담사',
+      role: '상담사',
+      branch: '미지정',
+      status: 'active',
+      createdAt: today(),
+      lastLoginAt: null,
+      loginCount: 0
+    };
+  } catch {
+    return null;
+  }
 }
 
 function ensureDefaults() {
   if (!Array.isArray(state.data.participants) || !state.data.participants.length) {
     state.data.participants = storageDefaults().participants;
   }
+  if (!Array.isArray(state.data.aiHubItems)) state.data.aiHubItems = storageDefaults().aiHubItems;
+  if (!Array.isArray(state.data.communityPosts)) state.data.communityPosts = [];
   if (!Array.isArray(state.data.accounts)) state.data.accounts = [];
   if (!Array.isArray(state.data.notices)) state.data.notices = [];
 }
@@ -189,6 +355,25 @@ async function loadNotices() {
   return state.data.notices;
 }
 
+async function loadCommunityPosts() {
+  if (!localStorage.getItem(AUTH_TOKEN_KEY)) {
+    state.data.communityPosts = [];
+    return [];
+  }
+  try {
+    const response = await fetch('/api/community-posts', {
+      headers: authHeaders(),
+      cache: 'no-store'
+    });
+    const data = await response.json().catch(() => null);
+    state.data.communityPosts = response.ok && Array.isArray(data?.posts) ? data.posts : [];
+  } catch (err) {
+    console.warn('커뮤니티 게시글 불러오기 실패', err);
+    state.data.communityPosts = [];
+  }
+  return state.data.communityPosts;
+}
+
 async function loadPublicNotices() {
   try {
     const response = await fetch('/api/notices/public', { cache: 'no-store' });
@@ -206,6 +391,8 @@ function resetSensitiveSessionData() {
   state.selectedParticipantId = state.data.participants[0]?.id || 'session_client';
   state.currentReport = null;
   state.editMode = false;
+  state.pendingSection = null;
+  state.editingCommunityPostId = null;
   state.selectedNoticeId = null;
   state.successResults = [];
   state.successQuery = '';
@@ -248,8 +435,8 @@ function pageSnapshot() {
     activeModule: state.activeModule,
     selectedParticipantId: state.selectedParticipantId,
     selectedNoticeId: state.selectedNoticeId,
-    currentReport: state.currentReport ? { ...state.currentReport } : null,
-    editMode: state.editMode,
+    currentReport: null,
+    editMode: false,
     reportMenuOpen: state.reportMenuOpen
   };
 }

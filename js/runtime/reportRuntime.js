@@ -3,7 +3,7 @@
   const reportTypes = window.REPORT_TYPES || { SUCCESS: 'success' };
   const REPORT_GENERATION_MESSAGES = [
     '리포트 생성 중...',
-    '검사 결과를 정리하고 있습니다...',
+    '작성 순서를 정리하고 있습니다...',
     '상담에 활용할 핵심 내용을 뽑고 있습니다...',
     '입력하신 시사점을 함께 반영하고 있습니다...',
     '리포트 문장을 다듬고 있습니다...'
@@ -47,16 +47,16 @@
     const errorType = normalizeReportErrorType(err);
     const message = String(err?.apiMessage || err?.message || err || '리포트가 생성되지 않았습니다.');
     const userMessages = {
-      JSON_PARSE_ERROR: 'AI 응답을 리포트 형식으로 정리하지 못했습니다. 입력 내용은 유지되므로 다시 생성해 주세요.',
-      JSON_REPAIR_FAILED: 'AI 응답 JSON 문법 복구에 실패했습니다. 입력 내용은 유지되므로 다시 생성해 주세요.',
-      AI_EMPTY_RESPONSE: 'AI 응답에서 리포트 내용을 찾지 못했습니다. 입력 내용을 확인한 뒤 다시 시도해 주세요.',
-      AI_RESPONSE_TRUNCATED: 'AI 응답이 중간에 끊겼습니다. 입력 내용은 유지되므로 다시 생성해 주세요.',
+      JSON_PARSE_ERROR: '현재 AI 사용량이 많아 서비스가 잠시 지연되고 있습니다. 입력 내용은 유지되므로 다시 생성해 주세요.',
+      JSON_REPAIR_FAILED: '현재 AI 사용량이 많아 서비스가 잠시 지연되고 있습니다. 입력 내용은 유지되므로 다시 생성해 주세요.',
+      AI_EMPTY_RESPONSE: '현재 AI 사용량이 많아 서비스가 잠시 지연되고 있습니다. 입력 내용을 확인한 뒤 다시 시도해 주세요.',
+      AI_RESPONSE_TRUNCATED: '현재 AI 사용량이 많아 서비스가 잠시 지연되고 있습니다. 입력 내용은 유지되므로 다시 생성해 주세요.',
       RATE_LIMIT: '현재 AI 사용량이 많아 서비스가 잠시 지연되고 있습니다. 입력 내용은 유지되므로 잠시 후 다시 시도해 주세요.',
-      SERVICE_UNAVAILABLE: 'AI 서비스가 일시적으로 혼잡하거나 점검 중입니다. 입력 내용은 유지되므로 잠시 후 다시 시도해 주세요.',
-      NETWORK_ERROR: '네트워크 연결이 불안정해 리포트를 생성하지 못했습니다. 연결 상태를 확인한 뒤 다시 시도해 주세요.',
-      AUTH_ERROR: 'AI 서비스 연결 정보를 확인할 수 없습니다. 담당자에게 문의해 주세요.',
+      SERVICE_UNAVAILABLE: '현재 AI 사용량이 많아 서비스가 잠시 지연되고 있습니다. 입력 내용은 유지되므로 잠시 후 다시 시도해 주세요.',
+      NETWORK_ERROR: '현재 AI 사용량이 많아 서비스가 잠시 지연되고 있습니다. 연결 상태를 확인한 뒤 다시 시도해 주세요.',
+      AUTH_ERROR: '현재 AI 사용량이 많아 서비스가 잠시 지연되고 있습니다. 담당자에게 문의해 주세요.',
       VALIDATION_ERROR: message,
-      TIMEOUT: 'AI 응답 시간이 초과되었습니다. 입력 내용은 유지되므로 잠시 후 다시 시도해 주세요.',
+      TIMEOUT: '현재 AI 사용량이 많아 서비스가 잠시 지연되고 있습니다. 입력 내용은 유지되므로 잠시 후 다시 시도해 주세요.',
       UNKNOWN_ERROR: '리포트 생성 중 일시적인 문제가 발생했습니다. 입력 내용은 유지되므로 잠시 후 다시 시도해 주세요.'
     };
     return { errorType, errorMessage: message, userMessage: userMessages[errorType] || userMessages.UNKNOWN_ERROR };

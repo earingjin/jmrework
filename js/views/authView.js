@@ -11,6 +11,8 @@ function goLogin() {
 function goLanding() {
   pushHistory();
   state.view = 'landing';
+  state.currentReport = null;
+  state.editMode = false;
   loadPublicNotices().finally(() => render());
 }
 
@@ -27,6 +29,30 @@ function goAppHome() {
   state.editMode = false;
   state.reportMenuOpen = false;
   loadNotices().finally(() => render());
+}
+
+function goProtectedSection(section) {
+  if (!state.user) {
+    pushHistory();
+    state.pendingSection = section;
+    state.view = 'login';
+    render();
+    return;
+  }
+  pushHistory();
+  state.view = 'app';
+  state.active = section;
+  state.currentReport = null;
+  state.editMode = false;
+  if (section === 'notices') {
+    loadNotices().finally(() => render());
+    return;
+  }
+  if (section === 'community') {
+    loadCommunityPosts().finally(() => render());
+    return;
+  }
+  render();
 }
 
 function loginTemplate() {
@@ -75,11 +101,14 @@ async function login() {
           state.data.accounts.push(cached);
         }
         state.user = { accountId: serverAccount.id, loginId: cached.loginId, name: cached.name, role: cached.role };
+        localStorage.setItem(AUTH_ACCOUNT_STORAGE_KEY, JSON.stringify(cached));
         pushHistory();
         state.view = 'app';
-        state.active = APP_ROLE === 'admin' ? 'admin' : 'dashboard';
+        state.active = state.pendingSection || (APP_ROLE === 'admin' ? 'admin' : 'dashboard');
+        state.pendingSection = null;
         if (!state.selectedParticipantId && state.data.participants[0]) state.selectedParticipantId = state.data.participants[0].id;
         await loadNotices();
+        if (state.active === 'community') await loadCommunityPosts();
         persist();
         render();
         return;
@@ -110,6 +139,8 @@ async function guardedLogin(button) {
 
 function logout() {
   localStorage.removeItem(AUTH_TOKEN_KEY);
+  localStorage.removeItem(AUTH_ACCOUNT_STORAGE_KEY);
+  localStorage.removeItem(APP_LOCATION_STORAGE_KEY);
   state.user = null;
   resetSensitiveSessionData();
   state.view = 'landing';

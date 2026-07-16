@@ -46,9 +46,22 @@
     return response;
   }
 
+  function normalizeGeminiModelList(value) {
+    const raw = Array.isArray(value) ? value : String(value || '').split(',');
+    return raw.map((item) => String(item || '').trim()).filter(Boolean);
+  }
+
+  function getGeminiFallbackModels(scope = 'default') {
+    const cfg = window.AICareerReportConfig || {};
+    const scoped = cfg[`${scope}GeminiFallbackModels`];
+    const configured = scoped || cfg.geminiFallbackModels || localStorage.getItem('GEMINI_FALLBACK_MODELS');
+    const models = normalizeGeminiModelList(configured);
+    return models.length ? models : [DEFAULT_GEMINI_MODEL, 'gemini-2.5-flash-lite'];
+  }
+
   function geminiModelCandidates(scope = 'default', primaryModel = '') {
     const primary = primaryModel || getGeminiModel(scope);
-    return Array.from(new Set([primary, 'gemini-2.5-flash', 'gemini-3-flash'].filter(Boolean)));
+    return Array.from(new Set([primary, ...getGeminiFallbackModels(scope)].filter(Boolean)));
   }
 
   function wait(ms) {
@@ -158,6 +171,7 @@
     }),
     getGeminiModel,
     setGeminiModel,
+    getGeminiFallbackModels,
     geminiModelCandidates,
     wait,
     isGeminiRetryableError,
