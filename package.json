@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "init-admin": "node scripts/init-admin.js",
+    "test:auth-security": "node --test tests/auth-security.test.js"
   },
   "engines": {
     "node": ">=18"

@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const accountStore = require('../lib/accountStore');
 const { adminRequired, authRequired, createRateLimit, normalizeRole } = require('../lib/auth');
+const { validatePassword } = require('../lib/passwordPolicy');
 
 const router = express.Router();
 const loginRateLimit = createRateLimit({
@@ -12,6 +13,17 @@ const loginRateLimit = createRateLimit({
 });
 
 function unauthorized(res, msg = 'unauthorized') { return res.status(401).json({ error: { message: msg } }); }
+
+function passwordAuditContext(req, overrides = {}) {
+  return {
+    actorAccountId: req.user?.accountId || null,
+    action: overrides.action || 'password_changed',
+    source: overrides.source || 'application',
+    ipAddress: req.ip || req.socket?.remoteAddress || null,
+    userAgent: req.get('user-agent') || null,
+    metadata: overrides.metadata || {}
+  };
+}
 
 // GET /api/auth/me
 router.get('/auth/me', authRequired, async (req, res) => {
@@ -62,7 +74,8 @@ router.post('/auth/login', loginRateLimit, async (req, res) => {
 router.post('/auth/password', authRequired, async (req, res) => {
   const { currentPassword, newPassword } = req.body || {};
   if (!currentPassword || !newPassword) return res.status(400).json({ error: { message: 'currentPassword and newPassword required' } });
-  if (String(newPassword).length < 4) return res.status(400).json({ error: { message: 'newPassword must be at least 4 characters' } });
+  const passwordValidation = validatePassword(newPassword);
+  if (!passwordValidation.valid) return res.status(400).json({ error: { message: passwordValidation.message } });
 
   try {
     const account = await accountStore.findAccountById(req.user.accountId);
@@ -70,7 +83,11 @@ router.post('/auth/password', authRequired, async (req, res) => {
     const match = await bcrypt.compare(String(currentPassword), account.password_hash || account.passwordHash || '');
     if (!match) return unauthorized(res, 'Invalid current password');
 
-    const ok = await accountStore.updateAccountPassword(account.id, String(newPassword));
+    const ok = await accountStore.updateAccountPassword(
+      account.id,
+      String(newPassword),
+      passwordAuditContext(req, { source: 'self_service' })
+    );
     if (!ok) return res.status(404).json({ error: { message: 'Account not found' } });
     return res.json({ success: true });
   } catch (err) {
@@ -150,7 +167,16 @@ router.post('/accounts/:id/password', authRequired, adminRequired, async (req, r
     const id = req.params.id;
     const { password } = req.body || {};
     if (!password) return res.status(400).json({ error: { message: 'password required' } });
-    const ok = await accountStore.updateAccountPassword(id, password);
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) return res.status(400).json({ error: { message: passwordValidation.message } });
+    const ok = await accountStore.updateAccountPassword(
+      id,
+      password,
+      passwordAuditContext(req, {
+        action: 'password_reset',
+        source: 'admin_api'
+      })
+    );
     if (!ok) return res.status(404).json({ error: { message: 'Account not found' } });
     return res.json({ success: true });
   } catch (err) {
