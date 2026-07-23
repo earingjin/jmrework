@@ -37,6 +37,40 @@ function isAdminRole(role) {
   return ["admin", "administrator", "관리자"].includes(String(role || "").trim().toLowerCase());
 }
 
+async function restoreAdminLogin() {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  if (!token) return false;
+
+  try {
+    const response = await authFetch("/api/auth/me", { cache: "no-store" });
+    const data = await response.json().catch(() => null);
+
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      return false;
+    }
+
+    const account = data?.account;
+    if (!response.ok || !account) return false;
+    if (account.roleKey !== "admin" && !isAdminRole(account.role)) {
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      return false;
+    }
+
+    state.user = {
+      accountId: account.id,
+      loginId: account.loginId || account.login_id || "",
+      name: account.name,
+      role: account.role,
+    };
+    state.view = "app";
+    state.active = "admin";
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function login() {
   try {
     const response = await fetch("/api/auth/login", {

@@ -91,7 +91,7 @@ function landingNoticeBoardHtml() {
       </div>
       <div class="landing-notice-list">
         ${notices.length ? notices.map((notice) => `
-          <button type="button" class="landing-notice-row" onclick="goProtectedSection('notices')">
+          <button type="button" class="landing-notice-row" onclick="openLandingNotice('${escapeHtml(notice.id)}')">
             <span>${notice.pinned ? '[고정] ' : ''}${escapeHtml(notice.title)}</span>
             <small>${escapeHtml(landingNoticeDateText(notice.updatedAt || notice.createdAt))}</small>
           </button>`).join('') : '<div class="landing-notice-empty">등록된 공지사항이 없습니다.</div>'}
