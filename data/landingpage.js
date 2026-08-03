@@ -15,7 +15,7 @@ const LANDING_CONTENT = {
   },
   hero: {
     badge: 'RE:WORK CENTER',
-    title: 'AI 커리어 리포트 플랫폼',
+    title: '제이엠커리어 AI 리워크센터',
     description: '상담사는 내담자와의 대화에 집중할 수 있도록 AI가 상담에 필요한 리포트 초안을 준비합니다.',
     imageAlt: '상담사가 내담자와 커리어 상담을 진행하는 장면'
   },
