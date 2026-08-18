@@ -50,7 +50,7 @@ function communitySection() {
               <button class="btn" onclick="${editingPost ? 'updateCommunityPost()' : 'addCommunityPost()'}">${editingPost ? '수정 완료' : '게시하기'}</button>
               ${editingPost ? '<button class="btn secondary" onclick="cancelEditCommunityPost()">취소</button>' : ''}
             </div>
-            <p class="small" style="margin-bottom:0">게시글은 서버에 저장되며, 작성자명은 마스킹되어 표시됩니다.</p>
+            <p class="small" style="margin-bottom:0">작성자명은 마스킹되어 표시됩니다.</p>
           </div>
         </div>
         <div class="community-feed">${communityPostsHtml()}</div>
