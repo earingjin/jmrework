@@ -130,7 +130,7 @@ npm run test:auth-security
 - `README.md`: 서비스 소개, 기능, 실행 및 운영 기본 안내
 - `LOG_SCHEMA.md`: 리포트 생성 및 AI 요청 관련 사용 이벤트 정의
 - `admin/LOG_SCHEMA.md`: 관리자 화면에서 사용하는 로그 구조 안내
-- 'ARCHITECTURE.md' : 현재 코드 구조와 주요 실행 흐름
+- `ARCHITECTURE.md` : 현재 코드 구조와 주요 실행 흐름
 
 ## 운영 상태 안내
 
