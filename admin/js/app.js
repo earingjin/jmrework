@@ -79,7 +79,13 @@ document.addEventListener("change", (event) => {
   if (event.target.matches("[data-filter-success-cases]")) filterSuccessCases();
 });
 
-restoreAdminLogin().then(() => loadData()).then(() => {
+restoreAdminLogin().then(async (restored) => {
+  if (!restored) {
+    render();
+    return;
+  }
+  await loadData();
   render();
-  Promise.all([loadUsageEvents(), loadGeminiErrors()]).then(render);
+  await Promise.all([loadUsageEvents(), loadGeminiErrors()]);
+  render();
 });

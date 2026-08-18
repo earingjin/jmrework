@@ -9,8 +9,38 @@ function authHeaders(headers = {}) {
   return token ? { ...headers, Authorization: `Bearer ${token}` } : headers;
 }
 
+let adminAuthController = null;
+function getAdminAuthController() {
+  if (!adminAuthController) {
+    adminAuthController = AuthSession.createController({
+      storage: localStorage,
+      sensitiveKeys: [AUTH_TOKEN_KEY, ACCOUNT_STORAGE_KEY, LEGACY_STORAGE_KEY, USAGE_EVENT_STORAGE_KEY, NOTICES_CACHE_KEY],
+      resetSensitiveState: () => {
+        state.data = { accounts: [], reports: [], notices: [], successCases: [], successCaseBatches: [], usageEvents: [], geminiErrors: [] };
+      },
+      onUnauthorized: () => {
+        state.user = null;
+        state.view = 'login';
+        state.authRestoreMessage = '로그인 정보가 만료되었습니다. 다시 로그인해주세요.';
+        if (typeof render === 'function') render();
+      },
+      onForbidden: () => toast('이 작업을 수행할 권한이 없습니다.'),
+      onServiceError: () => showAdminServiceUnavailable('서버 문제로 관리자 데이터를 확인할 수 없습니다. 잠시 후 새로고침해주세요.'),
+      onNetworkError: () => showAdminServiceUnavailable('네트워크 연결을 확인한 뒤 새로고침해주세요.')
+    });
+  }
+  return adminAuthController;
+}
+
+function showAdminServiceUnavailable(message) {
+  state.view = 'login';
+  state.authRestoreMessage = message;
+  state.data = { accounts: [], reports: [], notices: [], successCases: [], successCaseBatches: [], usageEvents: [], geminiErrors: [] };
+  if (typeof render === 'function') render();
+}
+
 function authFetch(url, options = {}) {
-  return fetch(url, {
+  return getAdminAuthController().authenticatedFetch(url, {
     ...options,
     headers: authHeaders(options.headers || {}),
   });
@@ -82,23 +112,17 @@ async function loadData() {
     Array.isArray(legacySaved?.accounts) ? legacySaved.accounts : []
   );
 
-  let accounts = Array.isArray(savedAccounts?.accounts)
-    ? savedAccounts.accounts
-    : Array.isArray(legacySaved?.accounts)
-      ? legacySaved.accounts
-      : [];
+  let accounts = [];
 
   // try to load accounts from server DB first
   try {
     const response = await authFetch("/api/accounts", { cache: "no-store" });
-    if (response.ok) {
-      const data = await response.json();
-      if (Array.isArray(data?.accounts)) {
-        accounts = await migrateLocalCounselorsToServer(localAccounts, data.accounts);
-      }
-    }
+    if (!response.ok) return false;
+    const data = await response.json();
+    if (!Array.isArray(data?.accounts)) return false;
+    accounts = await migrateLocalCounselorsToServer(localAccounts, data.accounts);
   } catch (err) {
-    // fallback to localStorage if server fetch fails
+    return false;
   }
 
   const usageEvents = Array.isArray(savedUsageEvents)
@@ -124,6 +148,7 @@ async function loadData() {
 
   persist();
   await loadNotices();
+  return true;
 }
 
 async function loadUsageEvents() {

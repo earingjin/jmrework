@@ -64,6 +64,7 @@ AI 도구와 활용 자료를 한곳에서 참고할 수 있도록 준비하는 
    GEMINI_API_KEY=your_gemini_api_key
    JWT_SECRET=replace_with_a_long_random_secret
    PORT=3000
+   TRUST_PROXY=
    ```
 
    PostgreSQL을 사용하는 환경에서는 다음 값도 설정합니다.
@@ -101,6 +102,63 @@ npm run init-admin
 
 이미 같은 로그인 ID의 계정이 존재하면 기존 계정은 변경되지 않습니다.
 
+## 인증과 세션
+
+- 로그인 JWT의 유효시간은 8시간입니다.
+- 로그인 복원은 브라우저 캐시나 JWT 내용만 신뢰하지 않고, 서버의 `/api/auth/me` 검증이 성공한 경우에만 허용됩니다.
+- 보호 API는 JWT 서명과 만료시간뿐 아니라 계정 존재 여부, 활성 상태, 현재 세션 버전을 매 요청 확인합니다.
+- 비밀번호 변경·관리자 비밀번호 초기화·계정 비활성화·권한 변경 시 계정의 세션 버전이 증가하여 기존 JWT가 즉시 폐기됩니다.
+- 세션 버전이 없는 과거 JWT는 보안을 위해 거부되므로 기능 배포 후 기존 사용자는 한 번 다시 로그인해야 합니다.
+- 본인이 비밀번호를 변경하면 현재 JWT도 즉시 무효화됩니다. 성공 안내 후 자동 로그아웃되며 새 비밀번호로 다시 로그인해야 합니다.
+
+### 계정 저장소 운영 정책
+
+- `NODE_ENV=production`에서는 `DATABASE_URL`이 필수입니다. 값이 없으면 서버가 즉시 종료되며 파일 계정 저장소로 자동 전환하지 않습니다.
+- 파일 계정 저장소는 개발·테스트 전용이며 하나의 Node.js 프로세스에서만 지원합니다. 여러 프로세스나 서버가 같은 파일을 공유하면 안 됩니다.
+- 파일 저장은 프로세스 내부 직렬화, 고유 임시 파일, 원자적 이름 변경을 사용합니다. 여러 프로세스 사이의 동시 쓰기는 보호하지 않습니다.
+- 로그인 ID는 앞뒤 공백을 제거하고 대소문자를 구분하지 않고 조회·중복 검사·로그인 제한에 사용합니다.
+- 운영 반영 전 `psql "$DATABASE_URL" -f scripts/check-login-id-conflicts.sql`을 실행합니다. 결과가 있으면 자동 병합·삭제하지 말고 관리자가 수동으로 충돌을 해소해야 합니다.
+
+### 프록시 환경
+
+`TRUST_PROXY`는 애플리케이션이 실제로 신뢰할 수 있는 역방향 프록시 뒤에 있을 때만 설정합니다. 직접 인터넷 요청을 받는 환경에서는 비워 둡니다. 특정 호스팅 환경이라는 이유만으로 자동 활성화하지 않습니다.
+
+```env
+# 한 단계 앞의 프록시를 신뢰
+TRUST_PROXY=1
+
+# 또는 Express가 지원하는 명시적 프록시 범위
+TRUST_PROXY=loopback, linklocal, uniquelocal
+```
+
+허용 값은 `false`·`0`·빈 값, 1~5의 프록시 홉 수, `loopback`·`linklocal`·`uniquelocal`, 명시적인 IP 또는 CIDR 목록입니다. `true`, 음수, 5보다 큰 홉 수, 잘못된 IP/CIDR은 시작 단계에서 거부됩니다. 배포 네트워크의 실제 프록시 단계와 주소 범위를 확인한 뒤 설정합니다.
+
+로그인 제한은 IP, 정규화된 로그인 ID, 두 값의 조합을 각각 독립적으로 계산합니다. 기본값은 IP 버킷 15분 동안 200회, ID와 조합 버킷은 각각 15분 동안 20회입니다. 로그인 성공 시 해당 ID와 IP+ID 버킷만 초기화하며, 공격자가 정상 계정 로그인으로 IP 제한을 우회하지 못하도록 IP 전용 버킷은 유지합니다. 각 버킷이 10,000개의 활성 기록 한도에 도달하면 기존 기록을 제거하지 않고 새 키를 일시적으로 거부합니다. 제한 정보는 단일 Node.js 프로세스 메모리에만 저장되므로 여러 서버 인스턴스 간에는 공유되지 않고 서버 재시작 시 초기화됩니다.
+
+선택적으로 다음 값을 조정할 수 있습니다.
+
+```env
+LOGIN_RATE_LIMIT_IP_WINDOW_MS=900000
+LOGIN_RATE_LIMIT_IP_MAX=200
+LOGIN_RATE_LIMIT_ID_WINDOW_MS=900000
+LOGIN_RATE_LIMIT_ID_MAX=20
+LOGIN_RATE_LIMIT_COMBINATION_WINDOW_MS=900000
+LOGIN_RATE_LIMIT_COMBINATION_MAX=20
+LOGIN_RATE_LIMIT_MAX_ENTRIES=10000
+```
+
+인증 저장소 장애 로그에는 오류 코드와 추적 ID만 기록합니다. 비밀번호, JWT, SQL, 환경변수, 연결 문자열, 오류 메시지와 스택은 기록하지 않습니다. 개발 진단이 꼭 필요할 때만 비운영 환경에서 `AUTH_DEBUG_ERRORS=true`로 오류 이름을 추가할 수 있습니다.
+
+## 데이터베이스 마이그레이션
+
+PostgreSQL 운영 환경에서는 새 애플리케이션을 시작하기 전에 마이그레이션을 번호 순서대로 적용합니다. 세션 버전 기능에는 다음 마이그레이션이 필요합니다.
+
+```bash
+psql "$DATABASE_URL" -f migrations/011_add_account_token_version.sql
+```
+
+`011_add_account_token_version.sql`은 기존 계정을 삭제하거나 테이블을 재생성하지 않습니다. 기존 계정의 `token_version`을 `0`으로 채우며 재실행해도 안전하게 작성되어 있습니다.
+
 ## 테스트
 
 인증 보안 관련 테스트는 다음 명령으로 실행합니다.
@@ -108,6 +166,16 @@ npm run init-admin
 ```bash
 npm run test:auth-security
 ```
+
+격리된 폐기 가능 테스트용 PostgreSQL이 있으면 `TEST_DATABASE_URL`과 명시적 확인값을 설정하고 다음 검증을 추가 실행할 수 있습니다. 테스트는 무작위 이름의 임시 스키마만 생성하고 종료 시 자신이 생성한 스키마를 삭제합니다. 연결 대상이 운영 DB인지 자동으로 완전히 판별할 수 없으므로 운영 DB 연결 문자열을 절대로 사용하면 안 됩니다. 현재 `DATABASE_URL`과 동일한 문자열은 테스트가 거부합니다.
+
+```powershell
+$env:TEST_DATABASE_URL="postgresql://test_user:test_password@localhost:5432/rework_test"
+$env:ALLOW_POSTGRES_AUTH_TEST="isolated-test-database"
+npm run test:postgres-auth
+```
+
+테스트는 실제 운영 DB 없이 실행되며 로그인, 권한, JWT 변조·만료·폐기, 비밀번호 변경, 계정 상태 변경, 로그인 제한과 클라이언트 복원 정책을 확인합니다.
 
 ## 데이터와 보안 주의사항
 

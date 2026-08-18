@@ -80,6 +80,7 @@ const state = {
   reportGenerationInProgress: false,
   reportGenerationRetryCount: 0,
   history: [],
+  authRestoreMessage: '',
   data: {
     participants: [{
       id: 'session_client',
@@ -209,7 +210,7 @@ async function load() {
   state.selectedParticipantId = state.data.participants[0]?.id || 'session_client';
   const restored = await restoreAuthenticatedUser();
   if (!restored) {
-    state.view = 'landing';
+    state.view = state.authRestoreMessage ? 'login' : 'landing';
     await loadPublicNotices();
   }
   persist();
@@ -227,16 +228,17 @@ async function restoreAuthenticatedUser() {
     const data = await response.json().catch(() => null);
 
     if (response.status === 401 || response.status === 403) {
-      localStorage.removeItem(AUTH_TOKEN_KEY);
-      localStorage.removeItem(AUTH_ACCOUNT_STORAGE_KEY);
+      clearAuthenticatedSession('로그인 정보가 만료되었거나 더 이상 유효하지 않습니다. 다시 로그인해주세요.');
       return false;
     }
 
     const account = data?.account;
-    if (!response.ok || !account) return restoreCachedAuthenticatedUser();
+    if (!response.ok || !account) {
+      blockAuthenticatedSession('서버 문제로 로그인 상태를 확인할 수 없습니다. 연결이 복구되면 새로고침해 다시 확인해주세요.');
+      return false;
+    }
     if (account.roleKey && account.roleKey !== APP_ROLE) {
-      localStorage.removeItem(AUTH_TOKEN_KEY);
-      localStorage.removeItem(AUTH_ACCOUNT_STORAGE_KEY);
+      clearAuthenticatedSession('이 계정은 상담사 화면에 접근할 수 없습니다.');
       return false;
     }
 
@@ -254,6 +256,7 @@ async function restoreAuthenticatedUser() {
 
     state.data.accounts = [cached];
     state.user = { accountId: account.id, loginId: cached.loginId, name: cached.name, role: cached.role };
+    state.authRestoreMessage = '';
     localStorage.setItem(AUTH_ACCOUNT_STORAGE_KEY, JSON.stringify(cached));
     if (readSavedAppLocation()?.view === 'landing') {
       state.view = 'landing';
@@ -270,56 +273,59 @@ async function restoreAuthenticatedUser() {
     return true;
   } catch (err) {
     console.warn('로그인 상태 복원 실패', err);
-    return restoreCachedAuthenticatedUser();
-  }
-}
-
-async function restoreCachedAuthenticatedUser() {
-  try {
-    const cached = JSON.parse(localStorage.getItem(AUTH_ACCOUNT_STORAGE_KEY) || 'null') || accountFromStoredToken();
-    if (!cached || normalizeAccountRole(cached.role) !== '상담사') return false;
-    state.data.accounts = [cached];
-    state.user = { accountId: cached.id, loginId: cached.loginId, name: cached.name, role: normalizeAccountRole(cached.role) };
-    if (readSavedAppLocation()?.view === 'landing') {
-      state.view = 'landing';
-      await loadPublicNotices();
-      return true;
-    }
-    state.view = 'app';
-    applySavedAppLocation('dashboard');
-    state.pendingSection = null;
-    state.currentReport = null;
-    state.editMode = false;
-    await loadNotices();
-    await loadActiveSectionData();
-    return true;
-  } catch (err) {
-    console.warn('저장된 로그인 정보 복원 실패', err);
+    blockAuthenticatedSession('네트워크 문제로 로그인 상태를 확인할 수 없습니다. 연결이 복구되면 새로고침해 다시 확인해주세요.');
     return false;
   }
 }
 
-function accountFromStoredToken() {
-  const token = localStorage.getItem(AUTH_TOKEN_KEY);
-  if (!token) return null;
-  try {
-    const body = String(token.split('.')[1] || '').replace(/-/g, '+').replace(/_/g, '/');
-    const payload = JSON.parse(atob(body.padEnd(Math.ceil(body.length / 4) * 4, '=')));
-    if (!['counselor', 'user', '상담사'].includes(String(payload.role || '').trim().toLowerCase())) return null;
-    return {
-      id: payload.accountId || '',
-      loginId: '',
-      name: '상담사',
-      role: '상담사',
-      branch: '미지정',
-      status: 'active',
-      createdAt: today(),
-      lastLoginAt: null,
-      loginCount: 0
-    };
-  } catch {
-    return null;
+function clearAuthenticatedSession(message = '') {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  localStorage.removeItem(AUTH_ACCOUNT_STORAGE_KEY);
+  localStorage.removeItem(APP_LOCATION_STORAGE_KEY);
+  localStorage.removeItem(LEGACY_STORAGE_KEY);
+  localStorage.removeItem('ai_career_usage_events_v1');
+  state.user = null;
+  resetSensitiveSessionData();
+  state.authRestoreMessage = message;
+}
+
+function blockAuthenticatedSession(message = '') {
+  localStorage.removeItem(AUTH_ACCOUNT_STORAGE_KEY);
+  localStorage.removeItem(APP_LOCATION_STORAGE_KEY);
+  localStorage.removeItem(LEGACY_STORAGE_KEY);
+  localStorage.removeItem('ai_career_usage_events_v1');
+  state.user = null;
+  resetSensitiveSessionData();
+  state.authRestoreMessage = message;
+}
+
+let authenticatedRequestController = null;
+function getAuthenticatedRequestController() {
+  if (!authenticatedRequestController) {
+    authenticatedRequestController = AuthSession.createController({
+      storage: localStorage,
+      sensitiveKeys: [AUTH_TOKEN_KEY, AUTH_ACCOUNT_STORAGE_KEY, APP_LOCATION_STORAGE_KEY, LEGACY_STORAGE_KEY, 'ai_career_usage_events_v1'],
+      resetSensitiveState: () => resetSensitiveSessionData(),
+      onUnauthorized: () => {
+        state.user = null;
+        state.authRestoreMessage = '로그인 정보가 만료되었습니다. 다시 로그인해주세요.';
+        state.view = 'login';
+        if (document.getElementById('app')) render();
+      },
+      onForbidden: () => toast('이 작업을 수행할 권한이 없습니다.'),
+      onServiceError: () => toast('서버 문제로 요청을 처리할 수 없습니다. 잠시 후 다시 시도해주세요.'),
+      onNetworkError: () => toast('네트워크 연결을 확인한 뒤 다시 시도해주세요.')
+    });
   }
+  return authenticatedRequestController;
+}
+
+function authenticatedFetch(input, init = {}, context = {}) {
+  return getAuthenticatedRequestController().authenticatedFetch(input, init, context);
+}
+
+function resetAuthenticatedRequestGuard() {
+  getAuthenticatedRequestController().resetInvalidation();
 }
 
 function ensureDefaults() {
@@ -342,7 +348,7 @@ async function loadNotices() {
     return [];
   }
   try {
-    const response = await fetch('/api/notices', {
+    const response = await authenticatedFetch('/api/notices', {
       headers: authHeaders(),
       cache: 'no-store'
     });
@@ -361,7 +367,7 @@ async function loadCommunityPosts() {
     return [];
   }
   try {
-    const response = await fetch('/api/community-posts', {
+    const response = await authenticatedFetch('/api/community-posts', {
       headers: authHeaders(),
       cache: 'no-store'
     });

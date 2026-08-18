@@ -65,7 +65,7 @@ async function reloadCommunityPosts() {
 }
 
 async function saveCommunityPostRequest(url, method, content) {
-  const response = await fetch(url, {
+  const response = await authenticatedFetch(url, {
     method,
     headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ content })
@@ -136,7 +136,7 @@ async function deleteCommunityPost(id) {
   }
   if (!confirm('게시글을 삭제할까요?')) return;
   try {
-    const response = await fetch(`/api/community-posts/${encodeURIComponent(id)}`, {
+    const response = await authenticatedFetch(`/api/community-posts/${encodeURIComponent(id)}`, {
       method: 'DELETE',
       headers: authHeaders()
     });

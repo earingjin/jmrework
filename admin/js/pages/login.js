@@ -1,4 +1,5 @@
 function loginTemplate() {
+  const restoreMessage = state.authRestoreMessage ? `<div class="notice">${escapeHtml(state.authRestoreMessage)}</div>` : "";
   return `
     <div class="login-screen">
       <section class="login-hero">
@@ -10,7 +11,7 @@ function loginTemplate() {
       <section class="login-panel">
         <div class="login-box">
           <h2>관리자 로그인</h2>
-          <p>관리자 계정으로 접속해주세요.</p>
+          <p>관리자 계정으로 접속해주세요.</p>${restoreMessage}
           <div class="field"><label>아이디</label><input id="loginId" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore></div>
           <div class="field"><label>비밀번호</label><input id="loginPw" type="password" autocomplete="new-password" data-lpignore="true" data-1p-ignore></div>
           <button class="btn full" data-action="login">접속하기</button>
@@ -46,14 +47,17 @@ async function restoreAdminLogin() {
     const data = await response.json().catch(() => null);
 
     if (response.status === 401 || response.status === 403) {
-      localStorage.removeItem(AUTH_TOKEN_KEY);
+      if (response.status === 403) clearAdminAuthentication("관리자 권한이 없는 계정입니다.");
       return false;
     }
 
     const account = data?.account;
-    if (!response.ok || !account) return false;
+    if (!response.ok || !account) {
+      showAdminServiceUnavailable("서버 문제로 로그인 상태를 확인할 수 없습니다. 연결이 복구되면 새로고침해 다시 확인해주세요.");
+      return false;
+    }
     if (account.roleKey !== "admin" && !isAdminRole(account.role)) {
-      localStorage.removeItem(AUTH_TOKEN_KEY);
+      clearAdminAuthentication("관리자 권한이 없는 계정입니다.");
       return false;
     }
 
@@ -65,8 +69,10 @@ async function restoreAdminLogin() {
     };
     state.view = "app";
     state.active = "admin";
+    state.authRestoreMessage = "";
     return true;
   } catch {
+    showAdminServiceUnavailable("네트워크 문제로 로그인 상태를 확인할 수 없습니다. 연결이 복구되면 새로고침해 다시 확인해주세요.");
     return false;
   }
 }
@@ -87,9 +93,11 @@ async function login() {
     }
 
     localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+    getAdminAuthController().resetInvalidation();
     state.user = { accountId: account.id, name: account.name, role: account.role };
     state.view = "app";
     state.active = "admin";
+    state.authRestoreMessage = "";
     return true;
   } catch {
     toast("관리자 계정 정보가 올바르지 않습니다.");
@@ -98,7 +106,26 @@ async function login() {
 }
 
 function logout() {
+  clearAdminAuthentication("");
+}
+
+function clearAdminAuthentication(message = "") {
   localStorage.removeItem(AUTH_TOKEN_KEY);
+  localStorage.removeItem(ACCOUNT_STORAGE_KEY);
+  localStorage.removeItem(LEGACY_STORAGE_KEY);
+  localStorage.removeItem(USAGE_EVENT_STORAGE_KEY);
+  localStorage.removeItem(NOTICES_CACHE_KEY);
   state.user = null;
   state.view = "login";
+  state.active = "admin";
+  state.authRestoreMessage = message;
+  state.data = {
+    accounts: [],
+    reports: [],
+    notices: [],
+    successCases: [],
+    successCaseBatches: [],
+    usageEvents: [],
+    geminiErrors: [],
+  };
 }

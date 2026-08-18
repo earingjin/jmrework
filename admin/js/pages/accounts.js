@@ -164,7 +164,9 @@ async function changeAdminPassword() {
       const element = document.getElementById(id);
       if (element) element.value = "";
     });
-    toast("관리자 비밀번호가 변경되었습니다.");
+    toast("관리자 비밀번호가 변경되었습니다. 보안을 위해 다시 로그인해주세요.");
+    logout();
+    render();
     return true;
   } catch (error) {
     console.error("changeAdminPassword error", error);

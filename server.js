@@ -4,6 +4,7 @@ const vm = require('vm');
 const express = require('express');
 
 require('dotenv').config();
+const { parseTrustProxy, validateProductionStorage } = require('./lib/runtimeConfig');
 
 const {
   adminRequired,
@@ -13,9 +14,11 @@ const {
 } = require('./lib/auth');
 
 requireJwtSecret();
+validateProductionStorage();
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
+app.set('trust proxy', parseTrustProxy(process.env.TRUST_PROXY));
 const publicDir = __dirname;
 const logDir = path.join(__dirname, 'logs');
 const geminiErrorLogPath = path.join(logDir, 'gemini-errors.jsonl');

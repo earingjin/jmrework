@@ -2,6 +2,7 @@ const state = {
   view: "login",
   user: null,
   active: "admin",
+  authRestoreMessage: "",
   data: {
     accounts: [],
     reports: [],

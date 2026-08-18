@@ -20,7 +20,7 @@ async function changeMyPassword() {
     return;
   }
   try {
-    const resp = await fetch('/api/auth/password', {
+    const resp = await authenticatedFetch('/api/auth/password', {
       method: 'POST',
       headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ currentPassword, newPassword })
@@ -29,11 +29,12 @@ async function changeMyPassword() {
       toast(resp.status === 401 ? '현재 비밀번호가 일치하지 않습니다.' : '비밀번호 변경에 실패했습니다.');
       return;
     }
-    toast('비밀번호가 변경되었습니다. 다음 로그인부터 새 비밀번호를 사용하세요.');
+    toast('비밀번호가 변경되었습니다. 보안을 위해 다시 로그인해주세요.');
     ['currentPw', 'newPw', 'newPw2'].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
+    logout();
   } catch (err) {
     console.warn('비밀번호 변경 요청 실패', err);
     toast('비밀번호 변경에 실패했습니다.');

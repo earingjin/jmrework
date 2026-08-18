@@ -74,7 +74,7 @@
 
   function sendUsageEventToServer(event) {
     try {
-      fetch('/api/usage-events', {
+      authenticatedFetch('/api/usage-events', {
         method: 'POST',
         headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ event }),

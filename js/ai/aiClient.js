@@ -86,7 +86,7 @@
     let lastErr = null;
     for (let attempt = 0; attempt <= delays.length; attempt += 1) {
       try {
-        const res = await fetch(url, options);
+        const res = await authenticatedFetch(url, options, { feature: 'gemini' });
         if (res.status === 429) {
           const apiError = await res.clone().json().catch(() => ({ status: res.status, statusText: res.statusText }));
           console.error('Gemini API 사용량 제한 오류:', apiError);
