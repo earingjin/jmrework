@@ -23,7 +23,7 @@ function aiHubSection() {
   return `
     <section id="section-ai-hub" class="section">
       <div class="empty" style="background:transparent;border-color:transparent;min-height:360px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:var(--muted)">
-        아직 준비중입니다.<br>AI 도구와 활용 자료를 한곳에 모아 상담 업무에 쉽게 참고할 수 있는 공간입니다.
+        더 좋은 서비스를 위해 점검중입니다.<br>AI 도구와 활용 자료를 한곳에 모아 상담 업무에 쉽게 참고할 수 있는 공간입니다.
       </div>
     </section>`;
 }
